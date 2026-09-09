@@ -9,6 +9,8 @@ function registerSetup(setup) {
 
 function main() {
   ctx.clearRect(0, 0, 1400, 750); //erase the screen so you can draw everything in it's most current position
+  drawGreekBackground();
+  drawLevelIntroOverlay();
 
   if (shouldDrawGrid) {
     makeGrid();
@@ -44,6 +46,158 @@ function main() {
   animate(); //this changes halle's picture to the next frame so it looks animated.
   // debug()                   //debugging values. Comment this out when not debugging.
   drawRobot(); //this actually displays the image of the robot.
+}
+
+function drawLevelIntroOverlay() {
+  if (!levelIntro) {
+    return;
+  }
+
+  const elapsed = performance.now() - levelIntro.startTime;
+  const total = levelIntro.duration;
+  const fadeIn = Math.min(elapsed / 220, 1);
+  const fadeOut = Math.max(0, 1 - Math.max(0, elapsed - 1200) / 600);
+  const alpha = Math.min(fadeIn, fadeOut);
+
+  if (alpha <= 0) {
+    levelIntro = null;
+    return;
+  }
+
+  ctx.fillStyle = `rgba(0, 0, 0, ${0.85 * alpha})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * alpha})`;
+  ctx.font = "700 34px serif";
+  ctx.fillText(levelIntro.number, canvas.width / 2, canvas.height / 2 - 28);
+
+  ctx.font = "900 72px serif";
+  ctx.fillText(levelIntro.title, canvas.width / 2, canvas.height / 2 + 52);
+
+  if (elapsed >= total) {
+    levelIntro = null;
+  }
+}
+
+function drawGreekBackground() {
+  var sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+  if (currentLevel === 1) {
+    sky.addColorStop(0, "#171b4a");
+    sky.addColorStop(0.52, "#7d4d78");
+    sky.addColorStop(1, "#e0a05b");
+  } else if (currentLevel === 2) {
+    sky.addColorStop(0, "#ff5c4d");
+    sky.addColorStop(0.5, "#ff3d35");
+    sky.addColorStop(1, "#c91f1f");
+  } else {
+    sky.addColorStop(0, "#171b4a");
+    sky.addColorStop(0.52, "#7d4d78");
+    sky.addColorStop(1, "#e0a05b");
+  }
+
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (currentLevel === 2) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 170, 160, 0.18)";
+    ctx.beginPath();
+    ctx.moveTo(0, 120);
+    ctx.lineTo(180, 70);
+    ctx.lineTo(320, 130);
+    ctx.lineTo(520, 80);
+    ctx.lineTo(700, 150);
+    ctx.lineTo(910, 90);
+    ctx.lineTo(1120, 160);
+    ctx.lineTo(1400, 100);
+    ctx.lineTo(1400, 300);
+    ctx.lineTo(0, 300);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(120, 20, 20, 0.28)";
+    [80, 260, 480, 710, 980, 1160, 1320].forEach((x) => {
+      ctx.beginPath();
+      ctx.arc(x, 220 + (x % 60), 90, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = "rgba(255, 220, 220, 0.12)";
+    for (let i = 0; i < 9; i += 1) {
+      const w = 200 + i * 35;
+      const h = 70 + (i % 3) * 16;
+      const x = i * 170;
+      const y = 80 + (i % 4) * 35;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    return;
+  }
+
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = "#ffe9a6";
+  ctx.beginPath();
+  ctx.arc(canvas.width * 0.78, 125, 78, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#fff0a8";
+  ctx.beginPath();
+  ctx.arc(canvas.width * 0.78, 125, 48, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 239, 201, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(190, 130, 150, 22, 0, 0, Math.PI * 2);
+  ctx.ellipse(440, 215, 190, 18, 0, 0, Math.PI * 2);
+  ctx.ellipse(1080, 245, 220, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(36, 30, 63, 0.58)";
+  ctx.beginPath();
+  ctx.moveTo(0, 390);
+  ctx.lineTo(170, 255);
+  ctx.lineTo(330, 390);
+  ctx.lineTo(470, 270);
+  ctx.lineTo(640, 390);
+  ctx.lineTo(810, 245);
+  ctx.lineTo(1000, 390);
+  ctx.lineTo(1160, 275);
+  ctx.lineTo(1400, 390);
+  ctx.lineTo(1400, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(238, 204, 145, 0.62)";
+  ctx.fillRect(1020, 325, 300, 18);
+  ctx.fillRect(1040, 305, 260, 18);
+  ctx.fillRect(1060, 285, 220, 18);
+  ctx.fillRect(1080, 265, 180, 18);
+  ctx.fillRect(1100, 245, 140, 18);
+  ctx.fillRect(1120, 225, 100, 18);
+
+  ctx.fillStyle = "rgba(255, 224, 157, 0.72)";
+  [1045, 1110, 1175, 1240].forEach(function (columnX) {
+    ctx.fillRect(columnX, 345, 22, 145);
+    ctx.fillRect(columnX - 7, 338, 36, 8);
+    ctx.fillRect(columnX - 7, 488, 36, 8);
+  });
+  ctx.fillStyle = "rgba(20, 18, 48, 0.42)";
+  ctx.beginPath();
+  ctx.moveTo(0, 505);
+  ctx.quadraticCurveTo(350, 450, 700, 510);
+  ctx.quadraticCurveTo(1050, 570, 1400, 500);
+  ctx.lineTo(1400, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function getJSON(url, callback) {
@@ -212,46 +366,120 @@ function animate() {
 }
 
 function drawRobot() {
-  //ctx.drawImage(imageVaribale, sourceY, SourceX, sourceWidth, sourceHeight, canvasX, canvasY, finalWidth, finalHeight)
-  //https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
-  //you only need the extra four source arguments if you want to display just a portion of the picture; if you want to show the whole picture you can just do drawImage(imageVar, canvasX, canvasY, width, height)
-
-  //next section draws hallie. There is an if so that the image is reversed based on the direction of travel
-  //there is also a hitDx and hitDy; those are offsets for the animation; enable debugger to see the true hitbox in green
-  //you can enable the debug view by uncommenting the debug() function call in the main function.
   if (player.deadAndDeathAnimationDone) {
-    return; //return stops the function, we don't want to draw the robot after we die
+    return;
   }
 
-  if (player.facingRight) {
-    ctx.drawImage(
-      halleImage,
-      spriteX,
-      spriteY,
-      spriteWidth,
-      spriteHeight,
-      player.x - hitDx,
-      player.y - hitDy,
-      player.width,
-      player.height
-    );
-  } else {
-    //for running to the left you mirror the image
-    ctx.save();
-    ctx.scale(-1, 1); //mirror the entire canvas
-    ctx.drawImage(
-      halleImage,
-      spriteX,
-      spriteY,
-      spriteWidth,
-      spriteHeight,
-      -player.x - player.width + hitDx,
-      player.y - hitDy,
-      player.width,
-      player.height
-    );
-    ctx.restore(); //put the canvas back to normal
+  drawGreekGoddess(
+    player.x - hitDx,
+    player.y - hitDy,
+    player.width,
+    player.height,
+    player.facingRight,
+  );
+}
+
+function drawGreekGoddess(x, y, width, height, facingRight) {
+  var centerX = x + width / 2;
+  var headY = y + height * 0.2;
+  var shoulderY = y + height * 0.39;
+  var dressBottom = y + height * 0.94;
+
+  ctx.save();
+  if (!facingRight) {
+    ctx.translate(centerX * 2, 0);
+    ctx.scale(-1, 1);
   }
+
+  ctx.globalAlpha = 0.7;
+  ctx.strokeStyle = "#ffe27a";
+  ctx.lineWidth = 2;
+  ctx.shadowColor = "#ffe27a";
+  ctx.shadowBlur = 13;
+  ctx.beginPath();
+  ctx.arc(centerX, headY, width * 0.29, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#54263c";
+  ctx.beginPath();
+  ctx.moveTo(x + width * 0.28, shoulderY);
+  ctx.lineTo(x + width * 0.03, dressBottom);
+  ctx.lineTo(x + width * 0.35, y + height * 0.82);
+  ctx.lineTo(x + width * 0.57, shoulderY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#f1c39b";
+  ctx.beginPath();
+  ctx.arc(centerX, headY, width * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#3a1e2a";
+  ctx.beginPath();
+  ctx.arc(centerX, headY, width * 0.2, Math.PI, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#d9a52e";
+  ctx.strokeStyle = "#ffe48a";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(centerX - width * 0.2, headY - height * 0.1);
+  ctx.quadraticCurveTo(
+    centerX,
+    headY - height * 0.17,
+    centerX + width * 0.2,
+    headY - height * 0.1,
+  );
+  ctx.lineTo(centerX + width * 0.16, headY - height * 0.03);
+  ctx.quadraticCurveTo(
+    centerX,
+    headY - height * 0.09,
+    centerX - width * 0.16,
+    headY - height * 0.03,
+  );
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff8df";
+  ctx.strokeStyle = "#d9a52e";
+  ctx.beginPath();
+  ctx.moveTo(centerX - width * 0.17, shoulderY);
+  ctx.lineTo(centerX + width * 0.16, shoulderY);
+  ctx.lineTo(centerX + width * 0.28, dressBottom);
+  ctx.lineTo(centerX - width * 0.3, dressBottom);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = "#f1c39b";
+  ctx.lineWidth = Math.max(3, width * 0.08);
+  ctx.beginPath();
+  ctx.moveTo(centerX - width * 0.15, shoulderY);
+  ctx.lineTo(x + width * 0.02, y + height * 0.61);
+  ctx.moveTo(centerX + width * 0.15, shoulderY);
+  ctx.lineTo(x + width * 0.79, y + height * 0.57);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#b17b25";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(centerX - width * 0.12, dressBottom);
+  ctx.lineTo(centerX - width * 0.15, y + height);
+  ctx.moveTo(centerX + width * 0.12, dressBottom);
+  ctx.lineTo(centerX + width * 0.16, y + height);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#ffe27a";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x + width * 0.8, y + height * 0.2);
+  ctx.lineTo(x + width * 0.88, y + height * 0.3);
+  ctx.lineTo(x + width * 0.82, y + height * 0.4);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function collision() {
@@ -270,7 +498,7 @@ function collision() {
         platforms[i].x,
         platforms[i].y,
         platforms[i].width,
-        platforms[i].height
+        platforms[i].height,
       );
     }
   }
@@ -388,28 +616,38 @@ function badPlatformCollision() {
 }
 
 function deathOfPlayer() {
-  ctx.fillStyle = "grey";
-  ctx.fillRect(
-    canvas.width / 4,
-    canvas.height / 6,
+  const panelX = canvas.width / 2 - 260;
+  const panelY = canvas.height / 2 - 160;
+  const panelWidth = 520;
+  const panelHeight = 250;
+
+  ctx.fillStyle = "rgba(15, 8, 8, 0.78)";
+  ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+  ctx.strokeStyle = "rgba(255, 90, 90, 0.9)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#f7d7d7";
+  ctx.font = "900 62px serif";
+  ctx.fillText("YOU DIED", canvas.width / 2, canvas.height / 2 - 22);
+
+  ctx.font = "500 28px serif";
+  ctx.fillStyle = "#f0c7c7";
+  ctx.fillText(
+    "The dungeon got the better of you.",
     canvas.width / 2,
-    canvas.height / 2
+    canvas.height / 2 + 26,
   );
-  ctx.fillStyle = "black";
-  ctx.font = "800% serif";
+
+  ctx.font = "700 26px serif";
+  ctx.fillStyle = "#ffffff";
   ctx.fillText(
-    "You are dead",
-    canvas.width / 4,
-    canvas.height / 6 + canvas.height / 5,
-    (canvas.width / 16) * 14
+    "Press any key to try again",
+    canvas.width / 2,
+    canvas.height / 2 + 90,
   );
-  ctx.font = "500% serif";
-  ctx.fillText(
-    "Hit any key to restart",
-    canvas.width / 4,
-    canvas.height / 6 + canvas.height / 3,
-    (canvas.width / 16) * 14
-  );
+
   if (keyPress.any) {
     keyPress.any = false;
     window.location.reload();
@@ -472,9 +710,110 @@ function drawPlatforms() {
 
     // Draw the platform
     const { color, x, y, width, height } = platforms[i];
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, width, height);
+    if (color === "lime") {
+      drawCheckeredPlatform(x, y, width, height);
+    } else if (color === "blue") {
+      drawStool(x, y, width, height);
+    } else if (color === "grey") {
+      drawConcretePlatform(x, y, width, height);
+    } else {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, width, height);
+    }
   }
+}
+
+function drawCheckeredPlatform(x, y, width, height) {
+  var tileSize = 10;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = "#000000";
+  for (var tileY = 0; tileY < height; tileY += tileSize) {
+    for (var tileX = 0; tileX < width; tileX += tileSize) {
+      if ((tileX / tileSize + tileY / tileSize) % 2 === 0) {
+        ctx.fillRect(
+          x + tileX,
+          y + tileY,
+          Math.min(tileSize, width - tileX),
+          Math.min(tileSize, height - tileY),
+        );
+      }
+    }
+  }
+}
+
+function drawConcretePlatform(x, y, width, height) {
+  var radius = Math.min(7, width / 2, height / 2);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fillStyle = "#777b7d";
+  ctx.fill();
+  ctx.clip();
+  ctx.fillStyle = "rgba(220, 224, 222, 0.35)";
+  for (var fleckY = y + 5; fleckY < y + height; fleckY += 13) {
+    for (var fleckX = x + 7; fleckX < x + width; fleckX += 17) {
+      ctx.fillRect(fleckX, fleckY, 3, 2);
+    }
+  }
+  ctx.strokeStyle = "rgba(35, 38, 39, 0.65)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + width * 0.2, y);
+  ctx.lineTo(x + width * 0.23, y + height * 0.45);
+  ctx.lineTo(x + width * 0.18, y + height);
+  ctx.moveTo(x + width * 0.72, y + height);
+  ctx.lineTo(x + width * 0.68, y + height * 0.55);
+  ctx.lineTo(x + width * 0.76, y + height * 0.2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawStool(x, y, width, height) {
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+  ctx.beginPath();
+  ctx.ellipse(
+    x + width / 2,
+    y + height - 1,
+    width * 0.42,
+    3,
+    0,
+    0,
+    Math.PI * 2,
+  );
+  ctx.fill();
+  ctx.strokeStyle = "#102c5c";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + width * 0.28, y + 12);
+  ctx.lineTo(x + width * 0.18, y + height - 2);
+  ctx.moveTo(x + width * 0.72, y + 12);
+  ctx.lineTo(x + width * 0.82, y + height - 2);
+  ctx.stroke();
+  ctx.strokeStyle = "#356ed1";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x + width * 0.25, y + height * 0.65);
+  ctx.lineTo(x + width * 0.75, y + height * 0.65);
+  ctx.stroke();
+  ctx.fillStyle = "#2458b5";
+  ctx.beginPath();
+  ctx.roundRect(x + 4, y + 2, width - 8, 12, 4);
+  ctx.fill();
+  ctx.fillStyle = "#5c95ed";
+  ctx.fillRect(x + 8, y + 4, width - 16, 3);
+  ctx.restore();
 }
 
 function drawFakePlatforms() {
@@ -509,7 +848,7 @@ function makeGrid() {
     ctx.fillText(
       i, // text
       i - 15, // x location
-      25 // y location
+      25, // y location
     );
   }
 
@@ -523,21 +862,48 @@ function makeGrid() {
     ctx.fillText(
       i, // text
       10, // x location
-      i + 5 // y location
+      i + 5, // y location
     );
   }
   gridMade = true;
 }
 
 function drawProjectiles() {
+  var time = Date.now();
   for (var i = 0; i < projectiles.length; i++) {
-    ctx.drawImage(
-      projectileImage,
-      projectiles[i].x,
-      projectiles[i].y,
-      projectiles[i].width,
-      projectiles[i].height
+    var projectile = projectiles[i];
+    var horizontal = projectile.speedX !== 0;
+    var pulse = 0.7 + Math.sin(time / 90) * 0.3;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.shadowColor = "#ff0000";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#ff2020";
+    ctx.fillRect(
+      projectile.x,
+      projectile.y,
+      projectile.width,
+      projectile.height,
     );
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff";
+    if (horizontal) {
+      ctx.fillRect(
+        projectile.x,
+        projectile.y + projectile.height * 0.35,
+        projectile.width,
+        projectile.height * 0.3,
+      );
+    } else {
+      ctx.fillRect(
+        projectile.x + projectile.width * 0.35,
+        projectile.y,
+        projectile.width * 0.3,
+        projectile.height,
+      );
+    }
+    ctx.restore();
     projectiles[i].x = projectiles[i].x + projectiles[i].speedX;
     projectiles[i].y = projectiles[i].y + projectiles[i].speedY;
   }
@@ -552,7 +918,7 @@ function drawCannons() {
         cannons[i].x,
         cannons[i].y,
         cannons[i].projectileWidth,
-        cannons[i].projectileHeight
+        cannons[i].projectileHeight,
       );
     } else {
       cannons[i].projectileCountdown = cannons[i].projectileCountdown + 1;
@@ -573,41 +939,129 @@ function drawCannons() {
       }
     }
 
-    ctx.fillStyle = "grey";
     ctx.save(); //save the current translation of the screen.
     ctx.translate(cannons[i].x, cannons[i].y); //you are moving the top left of the screen to the pictures location, this is because you can't rotate the image, you have to rotate the whole page
     ctx.rotate((cannons[i].rotation * Math.PI) / 180); //then you rotate. rotation is centered on 0,0 on the canvas, which is why we moved the picture to 0,0 with translate(x,y)
-    ctx.drawImage(cannonImage, 0, 0, cannonWidth, cannonHeight); //you draw the image on the rotated canvas. as of this line, the picture is straight and the rest of the page is rotated
+    drawTempleCannon();
     //also the previous line uses -width / 2 so that the picture is centered. This will mean that (0,0) is at the exact center of the image
     ctx.translate(-cannons[i].x, -cannons[i].y); //the reverse of the previous translate, this moves the page back to the correct place so that the image is no longer at (0,0)
     ctx.restore(); //this unrotates the canvas so the canvas is straight, but now since you did that the picture looks rotated
   }
 }
 
+function drawTempleCannon() {
+  var bronze = ctx.createLinearGradient(25, 0, 75, 0);
+  bronze.addColorStop(0, "#5b2415");
+  bronze.addColorStop(0.2, "#c97832");
+  bronze.addColorStop(0.45, "#f0b45d");
+  bronze.addColorStop(0.7, "#9d4e20");
+  bronze.addColorStop(1, "#42180f");
+
+  ctx.save();
+  ctx.shadowColor = "rgba(20, 10, 20, 0.7)";
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 5;
+  ctx.fillStyle = "#453044";
+  ctx.beginPath();
+  ctx.ellipse(48, 68, 43, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.fillStyle = "#80604e";
+  ctx.beginPath();
+  ctx.roundRect(13, 58, 70, 12, 5);
+  ctx.fill();
+  ctx.fillStyle = "#c9a07c";
+  ctx.fillRect(17, 58, 62, 3);
+
+  ctx.fillStyle = bronze;
+  ctx.beginPath();
+  ctx.ellipse(48, 51, 30, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#f7cf7a";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = bronze;
+  ctx.beginPath();
+  ctx.roundRect(34, 5, 28, 48, 7);
+  ctx.fill();
+  ctx.strokeStyle = "#5a2114";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#2d1110";
+  ctx.beginPath();
+  ctx.ellipse(48, 6, 16, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#f7cf7a";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#f0b45d";
+  ctx.fillRect(29, 17, 38, 5);
+  ctx.fillRect(31, 39, 34, 5);
+  ctx.strokeStyle = "#6f2d18";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(29, 17, 38, 5);
+  ctx.strokeRect(31, 39, 34, 5);
+
+  ctx.strokeStyle = "#ffe29a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(39, 27);
+  ctx.lineTo(44, 32);
+  ctx.lineTo(39, 37);
+  ctx.moveTo(57, 27);
+  ctx.lineTo(52, 32);
+  ctx.lineTo(57, 37);
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff0ae";
+  ctx.beginPath();
+  ctx.arc(48, 51, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#6b2817";
+  ctx.beginPath();
+  ctx.arc(48, 51, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawCollectables() {
   for (var i = 0; i < collectables.length; i++) {
     if (collectables[i].collected !== true) {
       //draw on screen if not collected
-      ctx.drawImage(
-        collectables[i].image,
-        collectables[i].x,
-        collectables[i].y,
-        collectableWidth,
-        collectableHeight
-      );
+      if (collectables[i].type === "diamond") {
+        drawGrapes(collectables[i].x, collectables[i].y, 1);
+      } else {
+        ctx.drawImage(
+          collectables[i].image,
+          collectables[i].x,
+          collectables[i].y,
+          collectableWidth,
+          collectableHeight,
+        );
+      }
     } else {
       //draw the icons at the top if collected
       if (collectables[i].alpha > 0.4) {
         collectables[i].alpha = collectables[i].alpha - 0.007;
       }
       ctx.globalAlpha = collectables[i].alpha;
-      ctx.drawImage(
-        collectables[i].image,
-        200 + 100 * i,
-        10,
-        collectableWidth,
-        collectableHeight
-      );
+      if (collectables[i].type === "diamond") {
+        drawGrapes(200 + 100 * i, 10, collectables[i].alpha);
+      } else {
+        ctx.drawImage(
+          collectables[i].image,
+          200 + 100 * i,
+          10,
+          collectableWidth,
+          collectableHeight,
+        );
+      }
       ctx.globalAlpha = 1;
     }
 
@@ -646,6 +1100,47 @@ function drawCollectables() {
   }
 }
 
+function drawGrapes(x, y, alpha) {
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.fillStyle = "#4c8b35";
+  ctx.beginPath();
+  ctx.ellipse(x + 26, y + 10, 11, 6, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#6f4aa8";
+  var berries = [
+    [24, 16],
+    [32, 18],
+    [19, 23],
+    [27, 25],
+    [35, 25],
+    [15, 31],
+    [23, 32],
+    [31, 32],
+    [19, 39],
+    [27, 39],
+    [23, 46],
+  ];
+  for (var i = 0; i < berries.length; i++) {
+    ctx.beginPath();
+    ctx.arc(x + berries[i][0], y + berries[i][1], 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(214, 190, 255, 0.7)";
+  for (var j = 0; j < berries.length; j += 2) {
+    ctx.beginPath();
+    ctx.arc(
+      x + berries[j][0] - 1.5,
+      y + berries[j][1] - 1.5,
+      1.3,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function collectablesCollide() {
   for (var i = 0; i < collectables.length; i++) {
     if (
@@ -673,13 +1168,44 @@ function checkForWin() {
 }
 
 function winGame() {
-  // If we reach this point, all collectables are collected
+  if (currentLevel === 1) {
+    ctx.fillStyle = "rgba(40, 0, 0, 0.7)";
+    ctx.fillRect(
+      canvas.width / 4,
+      canvas.height / 6,
+      canvas.width / 2,
+      canvas.height / 2,
+    );
+    ctx.fillStyle = "white";
+    ctx.font = "800% serif";
+    ctx.fillText(
+      "Level Clear!",
+      canvas.width / 4,
+      canvas.height / 6 + canvas.height / 5,
+      (canvas.width / 16) * 14,
+    );
+    ctx.font = "500% serif";
+    ctx.fillText(
+      "Press any key for level 2",
+      canvas.width / 4,
+      canvas.height / 6 + canvas.height / 3,
+      (canvas.width / 16) * 14,
+    );
+    if (keyPress.any) {
+      keyPress.any = false;
+      currentLevel = 2;
+      createLevel(currentLevel);
+      player.winConditionMet = false;
+    }
+    return;
+  }
+
   ctx.fillStyle = "grey";
   ctx.fillRect(
     canvas.width / 4,
     canvas.height / 6,
     canvas.width / 2,
-    canvas.height / 2
+    canvas.height / 2,
   );
   ctx.fillStyle = "white";
   ctx.font = "800% serif";
@@ -687,14 +1213,14 @@ function winGame() {
     "You Win!",
     canvas.width / 4,
     canvas.height / 6 + canvas.height / 5,
-    (canvas.width / 16) * 14
+    (canvas.width / 16) * 14,
   );
   ctx.font = "500% serif";
   ctx.fillText(
     "Hit any key to restart",
     canvas.width / 4,
     canvas.height / 6 + canvas.height / 3,
-    (canvas.width / 16) * 14
+    (canvas.width / 16) * 14,
   );
   if (keyPress.any) {
     keyPress.any = false;
@@ -713,7 +1239,7 @@ function createPlatform(
   speedX = 1,
   minY = null,
   maxY = null,
-  speedY = 1
+  speedY = 1,
 ) {
   platforms.push({
     x,
@@ -760,7 +1286,7 @@ function createCannon(
   height = defaultProjectileHeight,
   minPos = null,
   maxPos = null,
-  speed = 1
+  speed = 1,
 ) {
   if (wallLocation === "top") {
     cannons.push({
@@ -841,7 +1367,7 @@ function createCollectable(
   bounce = 1,
   minX = null,
   maxX = null,
-  speed = 1
+  speed = 1,
 ) {
   if (type !== "") {
     var image = document.createElement("img");
@@ -849,6 +1375,7 @@ function createCollectable(
     image.id = "image" + collectables.length;
     collectables.push({
       image,
+      type,
       x,
       y,
       speedY: 0,
@@ -942,6 +1469,11 @@ function keyboardControlActions() {
 }
 
 function handleKeyDown(e) {
+  if (player.deadAndDeathAnimationDone) {
+    window.location.reload();
+    return;
+  }
+
   keyPress.any = true;
   if (e.key === "ArrowUp" || e.key === "w") {
     keyPress.up = true;

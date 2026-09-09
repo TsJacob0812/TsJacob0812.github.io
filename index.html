@@ -7,37 +7,86 @@
 </head>
 
 <body>
-  <!-- All content goes here -->
-  <div id="all-contents">
-  <nav>
-    <h1>Jacobs website</h1>
-    <ul id="nav-ul">
-      <li class="nav-li"><a href="index.html">Home</a></li>
-      <li class="nav-li"><a href="portfolio.html">Portfolio</a></li>
-    </ul>
-  </nav>
-   <!-- nav goes here (TODO 6) -->  
-  <main>
-    <div class="sidebar">
-      <img class="sidebar-img" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzIt_0Km-FVTDwJQndSTbP9e3WoJJVK03GW_pU2xrREWt4a-eYozzbqwY:https://www.burpee.com/media/catalog/product/9/5/95eecad2bbde49fade2b3174604581e4cbc1efa3e5b48ebc13c6c8336261c070.jpeg%3Foptimize%3Dmedium%26bg-color%3D255,255,255%26fit%3Dbounds%26height%3D288%26width%3D288&s=10" alt="purple grapes" />
-
+  <div class="wine-intro" aria-hidden="true">
+    <div class="wine-scene">
+      <div class="wine-glass wine-glass-left"><span></span></div>
+      <div class="wine-glass wine-glass-right"><span></span></div>
+      <div class="wine-clink">CLINK</div>
+      <div class="wine-burst"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
+    <div class="wine-liquid">
+      <i class="wine-drop drop-one"></i>
+      <i class="wine-drop drop-two"></i>
+      <i class="wine-drop drop-three"></i>
+      <i class="wine-drop drop-four"></i>
+      <i class="wine-drop drop-five"></i>
+      <i class="wine-drop drop-six"></i>
+      <i class="wine-drip drip-one"></i>
+      <i class="wine-drip drip-two"></i>
+      <i class="wine-drip drip-three"></i>
+      <i class="wine-drip drip-four"></i>
+      <i class="wine-drip drip-five"></i>
+    </div>
+  </div>
+  <aside class="soundtrack-widget" aria-label="Website soundtrack controls">
+    <div class="record-disc" aria-hidden="true"><span></span></div>
+    <div class="soundtrack-controls">
+      <button id="soundtrack-toggle" type="button" aria-label="Pause soundtrack">Pause</button>
+      <button id="soundtrack-mute" type="button" aria-label="Mute soundtrack">Volume</button>
+      <label class="volume-control">
+        <span class="sr-only">Soundtrack volume</span>
+        <input id="soundtrack-volume" type="range" min="0" max="1" step="0.05" value="0.7" />
+      </label>
+    </div>
+  </aside>
+  <div class="music-visualizer" id="music-visualizer" aria-hidden="true"></div>
+  <div class="neo-triangle-layer" id="neo-triangle-layer" aria-hidden="true"></div>
+  <audio id="soundtrack" autoplay preload="auto">
+    <source src="audio/weight_original_soundtrack.mp3" type="audio/mpeg" />
+  </audio>
+  <!-- All content goes here -->
+  <div id="all-contents" class="site-content">
+    <nav>
+      <div class="white-flakes" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i>
+      </div>
+      <h1>Jacobs website</h1>
+      <ul id="nav-ul">
+        <li class="nav-li"><a href="index.html">Home</a></li>
+        <li class="nav-li"><a href="portfolio.html">Portfolio</a></li>
+        <li class="nav-li"><a href="music.html">Music Taste</a></li>
+        <li class="nav-li"><a href="coding.html">Coding</a></li>
+      </ul>
+    </nav>
+    <!-- nav goes here (TODO 6) -->
+    <main>
+      <div class="sidebar">
+        <img class="sidebar-img"
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzIt_0Km-FVTDwJQndSTbP9e3WoJJVK03GW_pU2xrREWt4a-eYozzbqwY:https://www.burpee.com/media/catalog/product/9/5/95eecad2bbde49fade2b3174604581e4cbc1efa3e5b48ebc13c6c8336261c070.jpeg%3Foptimize%3Dmedium%26bg-color%3D255,255,255%26fit%3Dbounds%26height%3D288%26width%3D288&s=10"
+          alt="purple grapes" />
 
-    <div class="content">
-<h2>Jacob Gardner</h2>
-  <p>CHS student</p>
-    
-  <div id="interests">
-    <h3>Interests</h3>
-    <ul>
-      <li>Coding</li>
-      <li>Football</li>
-      <li>Sleeping</li>
-    </ul>
+      </div>
+
+      <div class="content">
+        <h2>
+          <span class="name-word name-jacob">Jacob</span>
+          <span class="name-word name-gardner">Gardner</span>
+        </h2>
+        <p>CHS student</p>
+
+        <div id="interests">
+          <h3>Interests</h3>
+          <ul>
+            <li>Coding</li>
+            <li>Football</li>
+            <li>Sleeping</li>
+          </ul>
+        </div>
+      </div>
+    </main>
   </div>
-</div>
-  </main>
-  </div>
+  <script src="index.js"></script>
 </body>
 
 </html>

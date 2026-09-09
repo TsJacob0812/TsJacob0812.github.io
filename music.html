@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jacob's music taste</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="music-page">
+  <div id="all-contents">
+    <nav>
+      <h1>Jacob's website</h1>
+      <ul id="nav-ul">
+        <li class="nav-li"><a href="index.html">Home</a></li>
+        <li class="nav-li"><a href="portfolio.html">Portfolio</a></li>
+        <li class="nav-li"><a href="music.html" aria-current="page">Music Taste</a></li>
+        <li class="nav-li"><a href="coding.html">Coding</a></li>
+      </ul>
+    </nav>
+
+    <main class="music-main">
+      <div class="content music-content">
+        <h2>Music Taste</h2>
+        <p class="music-subtitle">Drop a tape in the deck</p>
+        <div class="music-description">
+          <p>I usually like listening to rap music</p>
+          <p>such as <span class="artist-name">playboicarti</span></p>
+        </div>
+
+        <div class="music-stage">
+          <section class="boombox" aria-label="Boombox music player">
+            <h3 class="boombox-label">JACOB FM</h3>
+            <div class="speaker-row">
+              <div class="speaker" aria-hidden="true"></div>
+              <div class="tape-deck" id="tape-deck" aria-label="VHS tape drop zone">
+                <div class="deck-window" id="deck-window">Empty deck</div>
+              </div>
+              <div class="speaker" aria-hidden="true"></div>
+            </div>
+            <div class="boombox-controls">
+              <button id="play-button" type="button" disabled>Play</button>
+              <button id="pause-button" type="button" disabled>Pause</button>
+              <button id="eject-button" type="button" disabled>Eject</button>
+              <label class="boombox-volume">
+                <span>Volume</span>
+                <input id="volume-control" type="range" min="0" max="1" step="0.05" value="0.7" />
+              </label>
+            </div>
+          </section>
+
+          <div class="tape-shelf" id="tape-shelf">
+            <div class="tape-list">
+              <div class="vhs-tape" id="vhs-tape" data-audio="audio/magnolia.mp3" data-title="Magnolia Mix"
+                draggable="true" tabindex="0" role="button" aria-label="VHS music tape. Drag or click to load it.">
+                <span class="reel reel-left" aria-hidden="true"></span>
+                <span class="reel reel-right" aria-hidden="true"></span>
+                <span class="tape-name">Magnolia Mix</span>
+              </div>
+              <div class="vhs-tape" id="carti-tape" data-audio="audio/Playboi_Carti_Sky.mp3" data-title="Sky"
+                draggable="true" tabindex="0" role="button"
+                aria-label="Playboi Carti Sky music tape. Drag or click to load it.">
+                <span class="reel reel-left" aria-hidden="true"></span>
+                <span class="reel reel-right" aria-hidden="true"></span>
+                <span class="tape-name">Sky</span>
+              </div>
+            </div>
+            <span>VHS tape</span>
+          </div>
+          <p class="music-status" id="music-status" aria-live="polite">Load a tape to unlock the track.</p>
+
+          <audio class="native-audio" id="audio-player" preload="metadata">
+            <source src="audio/magnolia.mp3" type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="music-page-visualizer" id="music-page-visualizer" aria-hidden="true"></div>
+  <script src="music.js"></script>
+</body>
+
+</html>
