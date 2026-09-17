@@ -2,7 +2,11 @@ $(function () {
   // initialize canvas and context when able to
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
-  window.addEventListener("load", loadJson);
+  if (document.readyState === "complete") {
+    loadJson();
+  } else {
+    window.addEventListener("load", loadJson, { once: true });
+  }
 
   function setup() {
     if (firstTimeSetup) {

@@ -88,9 +88,9 @@ function drawGreekBackground() {
     sky.addColorStop(0.52, "#7d4d78");
     sky.addColorStop(1, "#e0a05b");
   } else if (currentLevel === 2) {
-    sky.addColorStop(0, "#ff5c4d");
-    sky.addColorStop(0.5, "#ff3d35");
-    sky.addColorStop(1, "#c91f1f");
+    sky.addColorStop(0, "#260609");
+    sky.addColorStop(0.5, "#5c0d16");
+    sky.addColorStop(1, "#210307");
   } else {
     sky.addColorStop(0, "#171b4a");
     sky.addColorStop(0.52, "#7d4d78");
@@ -102,7 +102,7 @@ function drawGreekBackground() {
 
   if (currentLevel === 2) {
     ctx.save();
-    ctx.fillStyle = "rgba(255, 170, 160, 0.18)";
+    ctx.fillStyle = "rgba(170, 35, 40, 0.16)";
     ctx.beginPath();
     ctx.moveTo(0, 120);
     ctx.lineTo(180, 70);
@@ -117,14 +117,14 @@ function drawGreekBackground() {
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "rgba(120, 20, 20, 0.28)";
+    ctx.fillStyle = "rgba(20, 0, 4, 0.42)";
     [80, 260, 480, 710, 980, 1160, 1320].forEach((x) => {
       ctx.beginPath();
       ctx.arc(x, 220 + (x % 60), 90, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    ctx.fillStyle = "rgba(255, 220, 220, 0.12)";
+    ctx.fillStyle = "rgba(215, 55, 55, 0.08)";
     for (let i = 0; i < 9; i += 1) {
       const w = 200 + i * 35;
       const h = 70 + (i % 3) * 16;
@@ -133,7 +133,7 @@ function drawGreekBackground() {
       ctx.fillRect(x, y, w, h);
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+    ctx.fillStyle = "rgba(12, 0, 3, 0.28)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     return;

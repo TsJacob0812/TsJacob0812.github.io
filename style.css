@@ -1274,6 +1274,170 @@ nav h1 {
   opacity: 1;
 }
 
+/* Portfolio page */
+.portfolio-page {
+  background: #0b070b;
+  color: #ead8d0;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.portfolio-page::before {
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 46%,
+      rgba(214, 90, 102, 0.12) 47%,
+      transparent 48%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 84px,
+      rgba(210, 163, 124, 0.045) 85px,
+      transparent 86px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 84px,
+      rgba(214, 90, 102, 0.035) 85px,
+      transparent 86px
+    ),
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(214, 90, 102, 0.18),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(210, 163, 124, 0.13),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #090609, #260d1a 52%, #080508);
+  animation: portfolio-drift 16s ease-in-out infinite alternate;
+}
+
+.portfolio-page::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+.portfolio-page nav {
+  background: rgba(12, 7, 12, 0.94);
+  border: 1px solid #70404c;
+  border-radius: 2px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.42),
+    inset 0 -2px 0 #2b111c;
+}
+
+.portfolio-page nav h1 {
+  color: #d6a47e;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.28em;
+}
+
+.portfolio-page .nav-li a {
+  color: #cbaeb0;
+  border-radius: 0;
+  font-style: normal;
+  letter-spacing: 0.08em;
+}
+
+.portfolio-page .nav-li a[aria-current="page"] {
+  color: #f0c69f;
+  box-shadow: inset 0 -1px 0 #d65a66;
+}
+
+.portfolio-page .nav-li a:hover {
+  background: #651b2d;
+  color: #f7e5d4;
+}
+
+.portfolio-page .portfolio-content {
+  gap: 22px;
+}
+
+.portfolio-page .portfolio-content h1 {
+  color: #f0d6c6;
+  text-shadow:
+    2px 3px 0 #4e1726,
+    0 0 24px rgba(212, 82, 92, 0.32);
+}
+
+.portfolio-page .portfolio-content h3 {
+  margin: 0;
+  color: #d6a47e;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.portfolio-page #portfolio {
+  gap: 14px;
+}
+
+.portfolio-page #portfolio li {
+  width: 100%;
+}
+
+.portfolio-page #portfolio a {
+  justify-content: space-between;
+  padding: 20px 24px;
+  border: 1px solid #754354;
+  border-radius: 2px;
+  background: linear-gradient(145deg, #25121c, #09070c 72%);
+  color: #edd6cc;
+  box-shadow:
+    0 9px 20px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(214, 164, 126, 0.08);
+  text-align: left;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.portfolio-page #portfolio a:hover {
+  background: linear-gradient(145deg, #461727, #160b12 72%);
+  border-color: #d65a66;
+  color: #fff1e7;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(214, 90, 102, 0.22);
+  transform: translateX(8px);
+}
+
+.portfolio-page #portfolio a::after {
+  color: #d6a47e;
+  content: "[ open ]";
+  letter-spacing: 0.08em;
+}
+
+@keyframes portfolio-drift {
+  from {
+    background-position:
+      0% 0%,
+      0 0,
+      0 0,
+      20% 30%,
+      80% 70%,
+      50% 0;
+  }
+  to {
+    background-position:
+      12% 8%,
+      43px 22px,
+      -22px 43px,
+      28% 38%,
+      72% 62%,
+      50% 8%;
+  }
+}
+
 /* Music page */
 .music-page {
   background: #0b070b;

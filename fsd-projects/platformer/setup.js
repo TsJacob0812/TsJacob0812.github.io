@@ -179,6 +179,12 @@ function createLevel(levelNumber) {
   } else if (levelNumber === 2) {
     const floorY = canvas.height - 150;
     createPlatform(0, floorY, 1400, 120, "#3a0000");
+    createPlatform(0, 320, 220, 70, "#280708");
+    createPlatform(220, 330, 220, 60, "#280708");
+    createPlatform(440, 315, 220, 75, "#280708");
+    createPlatform(660, 335, 220, 55, "#280708");
+    createPlatform(880, 315, 220, 75, "#280708");
+    createPlatform(1100, 325, 300, 65, "#280708");
   }
 }
 

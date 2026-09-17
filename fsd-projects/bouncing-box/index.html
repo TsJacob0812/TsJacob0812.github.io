@@ -1,108 +1,256 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Bouncing Box</title>
-    <script src="jquery.min.js"></script>
-    <style>
-      .box {
-        width: 70px;
-        height: 70px;
-        background-color: teal;
-        font-size: 300%;
-        text-align: center;
-        user-select: none;
-        display: block;
-        position: absolute;
-        top: 100px;
-        /* Change me! */
-        left: 0px;
+
+<head>
+  <meta charset="utf-8" />
+  <title>Bouncing Box</title>
+  <script src="jquery.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      overflow: hidden;
+      background: #0b070b;
+      color: #ead8d0;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .board {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 100vh;
+      overflow: hidden;
+      isolation: isolate;
+      background: #120a0f;
+    }
+
+    .trail {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .trail-dot {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 70px;
+      height: 70px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+      will-change: transform;
+    }
+
+    .box {
+      width: 70px;
+      height: 70px;
+      display: grid;
+      place-items: center;
+      border: 2px solid #f7d6e5;
+      border-radius: 0;
+      background: #e94560;
+      box-shadow: 0 0 22px rgba(233, 69, 96, 0.45), 0 12px 28px rgba(0, 0, 0, 0.42);
+      color: #fff4ef;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 300%;
+      font-weight: 700;
+      text-align: center;
+      user-select: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      will-change: transform;
+      z-index: 2;
+    }
+
+    .box.wall-hit {
+      animation: wall-pulse 0.28s ease-out;
+    }
+
+    @keyframes wall-pulse {
+      0% {
+        transform: var(--box-position) scale(1);
       }
 
-      .board {
-        height: 100vh;
+      45% {
+        transform: var(--box-position) scale(1.24);
       }
-    </style>
-    <!-- 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
-  </head>
 
-  <body class="board">
-    <!-- HTML for the box -->
-    <div class="box">?</div>
+      100% {
+        transform: var(--box-position) scale(1);
+      }
+    }
+  </style>
+  <!-- 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+</head>
 
-    <script>
-      (function () {
-        "use strict";
-        /* global jQuery */
+<body class="board">
+  <!-- HTML for the box -->
+  <div class="trail" aria-hidden="true"></div>
+  <div class="box">?</div>
 
-        //////////////////////////////////////////////////////////////////
-        /////////////////// SETUP DO NOT DELETE //////////////////////////
-        //////////////////////////////////////////////////////////////////
+  <script>
+    (function () {
+      "use strict";
+      /* global jQuery */
 
-        var box = jQuery(".box"); // reference to the HTML .box element
-        var board = jQuery(".board"); // reference to the HTML .board element
-        var boardWidth = board.width(); // the maximum X-Coordinate of the screen
+      //////////////////////////////////////////////////////////////////
+      /////////////////// SETUP DO NOT DELETE //////////////////////////
+      //////////////////////////////////////////////////////////////////
 
-        // update the boardWidth variable when the window is resized
-        jQuery(window).on("resize", function () {
-          boardWidth = board.width();
-        });
+      var box = jQuery(".box"); // reference to the HTML .box element
+      var board = jQuery(".board"); // reference to the HTML .board element
+      var trail = jQuery(".trail");
+      var trailDots = [];
+      var trailPositions = [];
+      var boardWidth = board.width();
+      var boardHeight = board.height();
 
-        // Every 50 milliseconds, call the update Function (see below)
-        setInterval(update, 50);
+      for (var trailIndex = 0; trailIndex < 10; trailIndex += 1) {
+        var trailDot = jQuery("<span class='trail-dot'></span>");
+        trailDot.css("opacity", 0.22 - trailIndex * 0.018);
+        trail.append(trailDot);
+        trailDots.push(trailDot);
+        trailPositions.push({ x: 0, y: 0 });
+      }
 
-        // Every time the box is clicked, call the handleBoxClick Function (see below)
-        box.on("click", handleBoxClick);
+      jQuery(window).on("resize", function () {
+        boardWidth = board.width();
+        boardHeight = board.height();
+      });
 
-        // moves the Box to a new position on the screen along the X-Axis
-        function moveBoxTo(newPositionX) {
-          box.css("left", newPositionX);
+      // Every time the box is clicked, call the handleBoxClick Function (see below)
+      box.on("click", handleBoxClick);
+
+      // Move the box with a transform so the browser can animate it smoothly.
+      function moveBoxTo(newPositionX, newPositionY) {
+        var boxPosition = "translate3d(" + newPositionX + "px, " + newPositionY + "px, 0)";
+
+        trailPositions.unshift({ x: newPositionX, y: newPositionY });
+        trailPositions.pop();
+        for (var trailIndex = 0; trailIndex < trailDots.length; trailIndex += 1) {
+          trailDots[trailIndex].css(
+            "transform",
+            "translate3d(" + trailPositions[trailIndex].x + "px, " + trailPositions[trailIndex].y + "px, 0)",
+          );
         }
 
-        // changes the text displayed on the Box
-        function changeBoxText(newText) {
-          box.text(newText);
+        box[0].style.setProperty("--box-position", boxPosition);
+        box.css("transform", boxPosition);
+      }
+
+      // changes the text displayed on the Box
+      function changeBoxText(newText) {
+        box.text(newText);
+      }
+
+      //////////////////////////////////////////////////////////////////
+      /////////////////// YOUR CODE BELOW HERE /////////////////////////
+      //////////////////////////////////////////////////////////////////
+
+      // TODO 2 - Variable declarations
+      var positionX = 0;
+      var positionY = 100;
+      var points = 0;
+      var speed = 220;
+      var velocityX = speed;
+      var velocityY = speed * 0.7;
+      var previousTime = 0;
+
+      /**
+       * Move the box according to elapsed time, then choose a new angle whenever
+       * it reaches a wall so each ricochet can travel in a different direction.
+       */
+      function update(currentTime) {
+        if (!previousTime) {
+          previousTime = currentTime;
         }
 
-        //////////////////////////////////////////////////////////////////
-        /////////////////// YOUR CODE BELOW HERE /////////////////////////
-        //////////////////////////////////////////////////////////////////
+        var elapsed = Math.min((currentTime - previousTime) / 1000, 0.035);
+        var rightEdge = Math.max(0, boardWidth - box.outerWidth());
+        var bottomEdge = Math.max(0, boardHeight - box.outerHeight());
+        var hitWall = false;
 
-        // TODO 2 - Variable declarations
+        previousTime = currentTime;
+        positionX += velocityX * elapsed;
+        positionY += velocityY * elapsed;
 
-
-
-
-
-        /**
-         * This Function will be called 20 times/second.
-         * Each time it is called, it should move the Box to a new location.
-         * If the box drifts off the screen, turn it around!
-         */
-        function update() {
-
-        
-
-          
+        if (positionX >= rightEdge) {
+          positionX = rightEdge;
+          chooseRicochetDirection(-1, null);
+          hitWall = true;
+        } else if (positionX <= 0) {
+          positionX = 0;
+          chooseRicochetDirection(1, null);
+          hitWall = true;
         }
 
-        /**
-         * This Function will be called each time the box is clicked.
-         * Each time it is called, it should perform each of the following actions:
-         * - increase the points total
-         * - increase the speed
-         * - move the box to the left side of the screen.
-         */
-        function handleBoxClick() {
-
-
-
-
+        if (positionY >= bottomEdge) {
+          positionY = bottomEdge;
+          chooseRicochetDirection(null, -1);
+          hitWall = true;
+        } else if (positionY <= 0) {
+          positionY = 0;
+          chooseRicochetDirection(null, 1);
+          hitWall = true;
         }
 
+        moveBoxTo(positionX, positionY);
 
-        
-      })();
-    </script>
-  </body>
+        if (hitWall) {
+          box.removeClass("wall-hit");
+          void box[0].offsetWidth;
+          box.addClass("wall-hit");
+        }
+
+        window.requestAnimationFrame(update);
+      }
+
+      function chooseRicochetDirection(horizontalDirection, verticalDirection) {
+        var angle = 0.35 + Math.random() * 0.8;
+        var randomDirection = Math.random() < 0.5 ? -1 : 1;
+
+        if (horizontalDirection) {
+          velocityX = horizontalDirection * Math.cos(angle) * speed;
+          velocityY = randomDirection * Math.sin(angle) * speed;
+        } else {
+          velocityX = randomDirection * Math.sin(angle) * speed;
+          velocityY = verticalDirection * Math.cos(angle) * speed;
+        }
+      }
+      /**
+       * This Function will be called each time the box is clicked.
+       * Each time it is called, it should perform each of the following actions:
+       * - increase the points total
+       * - increase the speed
+       * - move the box to the left side of the screen.
+       */
+      function handleBoxClick() {
+        points += 1;
+        speed = 220 + 35 * points;
+        positionX = 0;
+        positionY = Math.random() * Math.max(0, boardHeight - box.outerHeight());
+        chooseRicochetDirection(1, null);
+        changeBoxText(points);
+        moveBoxTo(positionX, positionY);
+      }
+
+      moveBoxTo(positionX, positionY);
+      window.requestAnimationFrame(update);
+
+    })();
+  </script>
+</body>
+
 </html>
