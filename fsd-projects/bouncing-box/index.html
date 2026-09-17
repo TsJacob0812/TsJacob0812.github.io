@@ -167,6 +167,27 @@
       var velocityX = speed;
       var velocityY = speed * 0.7;
       var previousTime = 0;
+      var diggingAudio = new Audio("../../audio/Digging_Animal_Company.mp3");
+      diggingAudio.loop = true;
+      diggingAudio.preload = "auto";
+
+      function startDiggingAudio() {
+        var playPromise = diggingAudio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(function () { });
+        }
+      }
+
+      function stopDiggingAudio() {
+        diggingAudio.pause();
+        diggingAudio.currentTime = 0;
+      }
+
+      startDiggingAudio();
+      ["pointerdown", "keydown", "touchstart"].forEach(function (eventName) {
+        window.addEventListener(eventName, startDiggingAudio, { once: true });
+      });
+      window.addEventListener("pagehide", stopDiggingAudio);
 
       /**
        * Move the box according to elapsed time, then choose a new angle whenever
