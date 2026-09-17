@@ -957,17 +957,17 @@ h2 {
   background-image: linear-gradient(
     110deg,
     #5d062d 0 40%,
-    #ffb2c5 50%,
-    #8f123d 60% 100%
+    #a11f4a 50%,
+    #7c0f35 60% 100%
   );
 }
 
 .name-gardner {
   background-image: linear-gradient(
     110deg,
-    #126544 0 40%,
-    #d5ffe9 50%,
-    #2bbf88 60% 100%
+    #036b4c 0 40%,
+    #05a364 50%,
+    #06643d 60% 100%
   );
   filter: drop-shadow(0 0 7px rgba(43, 191, 136, 0.34));
 }
@@ -1070,9 +1070,9 @@ h2 {
     box-shadow 0.4s ease;
 }
 .sidebar-img:hover {
-  filter: grayscale(100%);
+  filter: saturate(110%);
   transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 90px 80px rgba(0, 0, 0, 0.18);
 }
 .sidebar-img {
   width: 100%;
