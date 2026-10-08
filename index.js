@@ -17,6 +17,8 @@ let soundtrackContext = null;
 let bassFilter = null;
 let analyser = null;
 let visualizerFrame = null;
+let hasStartedSoundtrack = false;
+let hasPlayedDing = false;
 
 const visualizer = document.querySelector("#music-visualizer");
 const triangleLayer = document.querySelector("#neo-triangle-layer");
@@ -169,7 +171,10 @@ function startSoundtrack() {
   if (!visualizerFrame) {
     updateVisualizer();
   }
-  soundtrack.currentTime = soundtrackStartTime;
+  if (!hasStartedSoundtrack) {
+    soundtrack.currentTime = soundtrackStartTime;
+    hasStartedSoundtrack = true;
+  }
   soundtrack.volume = 0;
   return soundtrack
     .play()
@@ -184,27 +189,43 @@ function startSoundtrack() {
 }
 
 function playDing() {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) {
-    return;
+  if (hasPlayedDing) {
+    return Promise.resolve();
   }
 
-  const audioContext = new AudioContextClass();
-  const now = audioContext.currentTime;
-  const gain = audioContext.createGain();
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.16, now + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
-  gain.connect(audioContext.destination);
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return Promise.resolve();
+  }
 
-  [1100, 2200].forEach((frequency, index) => {
-    const oscillator = audioContext.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    oscillator.detune.value = index * 4;
-    oscillator.connect(gain);
-    oscillator.start(now);
-    oscillator.stop(now + 0.8);
+  const audioContext = soundtrackContext || new AudioContextClass();
+  const resumeAudio =
+    audioContext.state === "suspended"
+      ? audioContext.resume()
+      : Promise.resolve();
+
+  return resumeAudio.then(() => {
+    if (hasPlayedDing) {
+      return;
+    }
+
+    hasPlayedDing = true;
+    const now = audioContext.currentTime;
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+    gain.connect(audioContext.destination);
+
+    [1100, 2200].forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      oscillator.detune.value = index * 4;
+      oscillator.connect(gain);
+      oscillator.start(now);
+      oscillator.stop(now + 0.8);
+    });
   });
 }
 
@@ -225,16 +246,35 @@ function updateMuteButton() {
   );
 }
 
-startSoundtrack().catch(updateToggleButton);
+startSoundtrack()
+  .then(() => {
+    window.setTimeout(playDing, clinkTime);
+  })
+  .catch(updateToggleButton);
 soundtrack.addEventListener("play", updateToggleButton);
 soundtrack.addEventListener("pause", updateToggleButton);
-window.setTimeout(() => {
-  playDing();
-}, clinkTime);
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".soundtrack-widget")) {
+    return;
+  }
+
+  if (soundtrack.paused) {
+    startSoundtrack()
+      .then(() => {
+        playDing();
+      })
+      .catch(updateToggleButton);
+  }
+});
 
 toggleButton.addEventListener("click", () => {
   if (soundtrack.paused) {
-    startSoundtrack().catch(updateToggleButton);
+    startSoundtrack()
+      .then(() => {
+        playDing();
+      })
+      .catch(updateToggleButton);
   } else {
     soundtrack.pause();
   }

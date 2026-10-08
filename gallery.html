@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Gallery | Jacob's website</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="gallery-page">
+  <div id="all-contents">
+    <nav>
+      <h1>Jacob's website</h1>
+      <ul id="nav-ul">
+        <li class="nav-li"><a href="index.html">Home</a></li>
+        <li class="nav-li"><a href="portfolio.html">Portfolio</a></li>
+        <li class="nav-li"><a href="music.html">Music Taste</a></li>
+        <li class="nav-li"><a href="coding.html">Coding</a></li>
+        <li class="nav-li"><a href="gallery.html" aria-current="page">Photo Gallery</a></li>
+      </ul>
+    </nav>
+
+    <main class="gallery-main">
+      <header class="gallery-heading">
+        <p class="gallery-kicker">𝕵𝖆𝖈𝖔𝖇'𝖘 𝖈𝖔𝖑𝖑𝖊𝖈𝖙𝖎𝖔𝖓</p>
+        <h2>𝕻𝖍𝖔𝖙𝖔 𝕲𝖆𝖑𝖑𝖊𝖗𝖞</h2>
+        <p>𝕋𝕖𝕟 𝕞𝕠𝕞𝕖𝕟𝕥𝕤. 𝕔𝕝𝕠𝕤𝕖 𝕦𝕡.</p>
+      </header>
+
+      <section class="gallery-grid" aria-label="Photo gallery">
+        <button class="gallery-item" type="button" data-src="assets/IMG_6581.JPG" data-alt="Gallery photo 1">
+          <img src="assets/IMG_6581.JPG" alt="Gallery photo 1" loading="lazy" />
+          <span>01</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6583.JPG" data-alt="Gallery photo 2">
+          <img src="assets/IMG_6583.JPG" alt="Gallery photo 2" loading="lazy" />
+          <span>02</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6584.JPG" data-alt="Gallery photo 3">
+          <img src="assets/IMG_6584.JPG" alt="Gallery photo 3" loading="lazy" />
+          <span>03</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6585.JPG" data-alt="Gallery photo 4">
+          <img src="assets/IMG_6585.JPG" alt="Gallery photo 4" loading="lazy" />
+          <span>04</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6586.JPG" data-alt="Gallery photo 5">
+          <img src="assets/IMG_6586.JPG" alt="Gallery photo 5" loading="lazy" />
+          <span>05</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6588.JPG" data-alt="Gallery photo 6">
+          <img src="assets/IMG_6588.JPG" alt="Gallery photo 6" loading="lazy" />
+          <span>06</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_6602.JPG" data-alt="Gallery photo 7">
+          <img src="assets/IMG_6602.JPG" alt="Gallery photo 7" loading="lazy" />
+          <span>07</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_1384.JPEG" data-alt="Gallery photo 8">
+          <img src="assets/IMG_1384.JPEG" alt="Gallery photo 8" loading="lazy" />
+          <span>08</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_1687.JPEG" data-alt="Gallery photo 9">
+          <img src="assets/IMG_1687.JPEG" alt="Gallery photo 9" loading="lazy" />
+          <span>09</span>
+        </button>
+        <button class="gallery-item" type="button" data-src="assets/IMG_1705.JPEG" data-alt="Gallery photo 10">
+          <img src="assets/IMG_1705.JPEG" alt="Gallery photo 10" loading="lazy" />
+          <span>10</span>
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <div class="gallery-lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Expanded photo"
+    hidden>
+    <button class="gallery-close" id="gallery-close" type="button" aria-label="Close photo">&times;</button>
+    <img class="gallery-lightbox-image" id="gallery-lightbox-image" alt="" />
+    <p class="gallery-lightbox-caption" id="gallery-lightbox-caption"></p>
+  </div>
+
+  <script src="gallery.js"></script>
+</body>
+
+</html>
