@@ -1202,7 +1202,7 @@ function tankFireSound(){
 
 function fireTankShell(){
   if(!inTank||tankFireCooldown>0)return;
-  tankFireCooldown=1.35;
+  tankFireCooldown=0;
   tankFireSound();
 
   const shell=new THREE.Group();
