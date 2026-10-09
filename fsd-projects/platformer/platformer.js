@@ -39,8 +39,7 @@ $(function () {
     // TODO 1 - Enable the Grid
     // toggleGrid();
 
-    setupLevelMusic(1);
-    createLevel(currentLevel);
+    createLevel();
 
     //////////////////////////////////
     // ONLY CHANGE ABOVE THIS POINT //

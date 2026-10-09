@@ -81,63 +81,13 @@ function drawLevelIntroOverlay() {
 }
 
 function drawGreekBackground() {
-  var sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-
-  if (currentLevel === 1) {
-    sky.addColorStop(0, "#171b4a");
-    sky.addColorStop(0.52, "#7d4d78");
-    sky.addColorStop(1, "#e0a05b");
-  } else if (currentLevel === 2) {
-    sky.addColorStop(0, "#260609");
-    sky.addColorStop(0.5, "#5c0d16");
-    sky.addColorStop(1, "#210307");
-  } else {
-    sky.addColorStop(0, "#171b4a");
-    sky.addColorStop(0.52, "#7d4d78");
-    sky.addColorStop(1, "#e0a05b");
-  }
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, "#171b4a");
+  sky.addColorStop(0.52, "#7d4d78");
+  sky.addColorStop(1, "#e0a05b");
 
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (currentLevel === 2) {
-    ctx.save();
-    ctx.fillStyle = "rgba(170, 35, 40, 0.16)";
-    ctx.beginPath();
-    ctx.moveTo(0, 120);
-    ctx.lineTo(180, 70);
-    ctx.lineTo(320, 130);
-    ctx.lineTo(520, 80);
-    ctx.lineTo(700, 150);
-    ctx.lineTo(910, 90);
-    ctx.lineTo(1120, 160);
-    ctx.lineTo(1400, 100);
-    ctx.lineTo(1400, 300);
-    ctx.lineTo(0, 300);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "rgba(20, 0, 4, 0.42)";
-    [80, 260, 480, 710, 980, 1160, 1320].forEach((x) => {
-      ctx.beginPath();
-      ctx.arc(x, 220 + (x % 60), 90, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    ctx.fillStyle = "rgba(215, 55, 55, 0.08)";
-    for (let i = 0; i < 9; i += 1) {
-      const w = 200 + i * 35;
-      const h = 70 + (i % 3) * 16;
-      const x = i * 170;
-      const y = 80 + (i % 4) * 35;
-      ctx.fillRect(x, y, w, h);
-    }
-
-    ctx.fillStyle = "rgba(12, 0, 3, 0.28)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-    return;
-  }
 
   ctx.save();
   ctx.globalAlpha = 0.25;
@@ -1168,38 +1118,6 @@ function checkForWin() {
 }
 
 function winGame() {
-  if (currentLevel === 1) {
-    ctx.fillStyle = "rgba(40, 0, 0, 0.7)";
-    ctx.fillRect(
-      canvas.width / 4,
-      canvas.height / 6,
-      canvas.width / 2,
-      canvas.height / 2,
-    );
-    ctx.fillStyle = "white";
-    ctx.font = "800% serif";
-    ctx.fillText(
-      "Level Clear!",
-      canvas.width / 4,
-      canvas.height / 6 + canvas.height / 5,
-      (canvas.width / 16) * 14,
-    );
-    ctx.font = "500% serif";
-    ctx.fillText(
-      "Press any key for level 2",
-      canvas.width / 4,
-      canvas.height / 6 + canvas.height / 3,
-      (canvas.width / 16) * 14,
-    );
-    if (keyPress.any) {
-      keyPress.any = false;
-      currentLevel = 2;
-      createLevel(currentLevel);
-      player.winConditionMet = false;
-    }
-    return;
-  }
-
   ctx.fillStyle = "grey";
   ctx.fillRect(
     canvas.width / 4,

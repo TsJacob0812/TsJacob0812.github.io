@@ -2971,6 +2971,20 @@ nav h1 {
   color: #c0abb4;
 }
 
+.gallery-audio {
+  display: block;
+  width: min(100%, 520px);
+  margin: 0 auto 8px;
+  accent-color: #d7193f;
+}
+
+.gallery-audio-note {
+  margin: 0 0 24px;
+  color: #c4afb6;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3086,4 +3100,260 @@ nav h1 {
     padding-right: 12px;
     padding-left: 12px;
   }
+}
+
+/* Shared red-and-black theme for the site, excluding the coding desk. */
+body:not(.coding-page) {
+  --theme-red: #d7193f;
+  --theme-red-bright: #ff3657;
+  --theme-red-dark: #641126;
+  --theme-black: #090809;
+  --theme-panel: #171115;
+  --theme-border: #51202b;
+  --theme-text: #f5edf0;
+  --theme-muted: #c4afb6;
+  background: var(--theme-black);
+  color: var(--theme-text);
+}
+
+body:not(.coding-page)::before {
+  background:
+    linear-gradient(
+      125deg,
+      transparent 0 28%,
+      rgba(215, 25, 63, 0.11) 29%,
+      transparent 30% 65%,
+      rgba(255, 54, 87, 0.07) 66%,
+      transparent 67%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 74px,
+      rgba(255, 54, 87, 0.035) 75px,
+      transparent 76px 150px
+    ),
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(150, 12, 42, 0.32),
+      transparent 55%
+    ),
+    linear-gradient(145deg, #080708, #200a11 54%, #080708);
+  background-size: 180% 180%, 150px 150px, 100% 100%, 100% 100%;
+}
+
+body:not(.coding-page)::after {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+body:not(.coding-page) nav {
+  background: rgba(12, 9, 11, 0.96);
+  border: 1px solid var(--theme-border);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.42),
+    inset 0 -2px 0 rgba(215, 25, 63, 0.28);
+}
+
+body:not(.coding-page) nav h1 {
+  color: var(--theme-red-bright);
+}
+
+body:not(.coding-page) .nav-li a {
+  color: var(--theme-muted);
+}
+
+body:not(.coding-page) .nav-li a[aria-current="page"] {
+  color: #fff;
+  background: rgba(215, 25, 63, 0.2);
+  box-shadow: inset 0 -2px 0 var(--theme-red-bright);
+}
+
+body:not(.coding-page) .nav-li a:hover {
+  background: var(--theme-red-dark);
+  color: #fff;
+}
+
+body:not(.coding-page) h2,
+body:not(.coding-page) .content > p,
+body:not(.coding-page) .music-description,
+body:not(.coding-page) .gallery-heading h2,
+body:not(.coding-page) .portfolio-content h1,
+body:not(.coding-page) .music-content h2 {
+  color: var(--theme-text);
+}
+
+body:not(.coding-page) .name-jacob,
+body:not(.coding-page) .name-gardner {
+  background-image: linear-gradient(
+    110deg,
+    #9f102e 0 40%,
+    #ff3657 50%,
+    #9f102e 60% 100%
+  );
+  filter: drop-shadow(0 0 8px rgba(255, 54, 87, 0.35));
+}
+
+body:not(.coding-page) .name-jacob:hover,
+body:not(.coding-page) .name-gardner:hover {
+  filter: drop-shadow(0 0 13px rgba(255, 54, 87, 0.75));
+}
+
+body:not(.coding-page) #interests h3,
+body:not(.coding-page) .portfolio-content h3 {
+  color: var(--theme-red-bright);
+}
+
+body:not(.coding-page) #interests li {
+  border-color: var(--theme-red-dark);
+  background: #1a0b10;
+  color: #ffdce3;
+}
+
+body:not(.coding-page) #interests li:hover {
+  border-color: var(--theme-red-bright);
+  background: var(--theme-red-dark);
+  color: #fff;
+}
+
+body:not(.coding-page) .portfolio-page .portfolio-content h1,
+body:not(.coding-page) .music-page .music-content h2 {
+  color: var(--theme-text);
+  text-shadow: 0 0 26px rgba(255, 54, 87, 0.22);
+}
+
+body:not(.coding-page) .portfolio-page .portfolio-content h3,
+body:not(.coding-page) .music-page .nav-li a[aria-current="page"],
+body:not(.coding-page) .portfolio-page .nav-li a[aria-current="page"] {
+  color: #ff9aab;
+}
+
+body:not(.coding-page) .portfolio-page #portfolio a {
+  border-color: var(--theme-border);
+  background: linear-gradient(145deg, #1b1115, #090809 78%);
+  color: var(--theme-text);
+}
+
+body:not(.coding-page) .portfolio-page #portfolio a:hover {
+  border-color: var(--theme-red-bright);
+  background: linear-gradient(145deg, #43101e, #10090c 78%);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(215, 25, 63, 0.2);
+}
+
+body:not(.coding-page) .music-page .music-subtitle,
+body:not(.coding-page) .music-page .artist-name,
+body:not(.coding-page) .music-page .boombox-label,
+body:not(.coding-page) .music-page .tape-shelf,
+body:not(.coding-page) .music-page .music-status {
+  color: #ff9aab;
+}
+
+body:not(.coding-page) .music-page .boombox {
+  border-color: var(--theme-red-dark);
+  background: linear-gradient(145deg, #211116, #0b090a 76%);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.58),
+    0 0 30px rgba(215, 25, 63, 0.18);
+}
+
+body:not(.coding-page) .music-page .speaker {
+  border-color: #4a1825;
+  background: repeating-radial-gradient(circle, #190e12 0 5px, #431522 6px 8px);
+  box-shadow: inset 0 0 0 4px #10090c, 0 0 0 2px #76253a;
+}
+
+body:not(.coding-page) .music-page .tape-deck,
+body:not(.coding-page) .music-page .deck-window {
+  border-color: var(--theme-border);
+  background-color: #0b090a;
+  color: var(--theme-muted);
+}
+
+body:not(.coding-page) .music-page .deck-window.loaded {
+  background: rgba(215, 25, 63, 0.2);
+  color: #fff;
+}
+
+body:not(.coding-page) .music-page .tape-shelf {
+  border-color: var(--theme-border);
+  background: rgba(10, 7, 8, 0.6);
+}
+
+body:not(.coding-page) .music-page .vhs-tape {
+  border-color: var(--theme-red-dark);
+  background: linear-gradient(145deg, #291018, #0c090a);
+  color: var(--theme-text);
+}
+
+body:not(.coding-page) .music-page .reel {
+  border-color: #c95770;
+}
+
+body:not(.coding-page) .music-page .boombox-controls button {
+  border-color: var(--theme-red-dark);
+  background: #85132d;
+  color: #fff;
+}
+
+body:not(.coding-page) .music-page .boombox-controls button:hover:not(:disabled) {
+  background: var(--theme-red);
+}
+
+body:not(.coding-page) .music-page .boombox-controls,
+body:not(.coding-page) .music-page .boombox-volume {
+  border-color: var(--theme-border);
+  color: var(--theme-muted);
+}
+
+body:not(.coding-page) .music-page input[type="range"],
+body:not(.coding-page) .soundtrack-widget input[type="range"] {
+  accent-color: var(--theme-red-bright);
+}
+
+body:not(.coding-page) .music-page-visualizer-bar,
+body:not(.coding-page) .music-visualizer-bar {
+  background: linear-gradient(to top, #9f102e, #ff3657);
+  box-shadow: 0 0 8px rgba(255, 54, 87, 0.42);
+}
+
+body:not(.coding-page) .gallery-page .gallery-kicker {
+  color: var(--theme-red-bright);
+}
+
+body:not(.coding-page) .gallery-page .gallery-heading > p:last-child,
+body:not(.coding-page) .gallery-page .gallery-lightbox-caption {
+  color: var(--theme-muted);
+}
+
+body:not(.coding-page) .gallery-page .gallery-item {
+  border-color: var(--theme-border);
+  background: var(--theme-panel);
+}
+
+body:not(.coding-page) .gallery-page .gallery-item:focus-visible,
+body:not(.coding-page) .gallery-page .gallery-close:focus-visible {
+  outline-color: var(--theme-red-bright);
+}
+
+body:not(.coding-page) .soundtrack-widget {
+  border-color: rgba(255, 54, 87, 0.45);
+  background: rgba(12, 8, 10, 0.92);
+}
+
+body:not(.coding-page) .soundtrack-controls button {
+  border-color: var(--theme-red);
+  background: var(--theme-red-dark);
+}
+
+body:not(.coding-page) .record-disc {
+  border-color: #ff9aab;
+}
+
+body:not(.coding-page) .neo-triangle {
+  background: var(--theme-red-bright);
+  filter: drop-shadow(0 0 4px var(--theme-red-bright))
+    drop-shadow(0 0 11px var(--theme-red));
 }

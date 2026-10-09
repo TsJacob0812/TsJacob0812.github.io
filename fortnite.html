@@ -226,6 +226,61 @@ button{pointer-events:auto;border:0;border-radius:12px;background:#2789ef;color:
   100%{opacity:0;transform:scale(2.8)}
 }
 
+/* Match the website's red-and-black theme without recoloring the game world. */
+html,body{background:#090708}
+#help,#stats,#vehicleHud,#target,#mouseLockPrompt .mouse-lock-card,
+.queue-card,.drop-progress{
+  background-color:#110b0e;
+  border-color:#55202d;
+}
+#help{border-left-color:#ed2347}
+#hp{background:linear-gradient(90deg,#a90e30,#ff3657)}
+#storm{
+  background:#19090fdd;
+  border-color:#d7193f;
+  color:#ffdce3;
+}
+.invslot{background:#110b0edd;border-color:#ffffff2a}
+.invslot.active{border-color:#ff3657;box-shadow:0 0 14px #ff365766}
+#gameover .box,#victory .box,#card,.boot-card{
+  background:#100b0ef4;
+  border-color:#642032;
+}
+#victory{
+  background:radial-gradient(circle,#501020ee,#080607cc 70%);
+}
+#victory .box{border-color:#ed2347;box-shadow:0 0 50px #d7193f55}
+#victory h2{color:#ff7188}
+button{background:#bd1535}
+button:hover{background:#e32448}
+#start{
+  background:radial-gradient(circle,#310d18,#050405 70%);
+}
+.boot-card{box-shadow:0 30px 90px #000c,inset 0 0 60px #a316351c}
+.boot-line{background:linear-gradient(90deg,transparent,#ed2347,transparent)}
+#startGameBtn{box-shadow:0 0 24px #d7193f55}
+#siteLink{
+  border-color:#642032;
+  background:#110b0edd;
+}
+#siteLink:hover{background:#35101a}
+#queueScreen,#dropLoadScreen{
+  background:linear-gradient(135deg,#080607,#1d0b11);
+}
+#queueFill,#dropFill{background:linear-gradient(90deg,#b51032,#ff526d)}
+.queue-bar,.drop-progress .bar-bg{background:#211116}
+#lobbyScreen{
+  background:
+    radial-gradient(circle at 65% 35%,#65132444,transparent 32%),
+    linear-gradient(160deg,#080607,#1c0a10 55%,#10080b);
+}
+.lobby-glow{background:radial-gradient(circle,#e3244826,transparent 65%)}
+#dropInLobby{
+  background:linear-gradient(135deg,#b51032,#ed3453);
+  box-shadow:0 0 28px #d7193f66;
+}
+#drop-title p,.drop-title p{color:#d8b7c0}
+
 </style>
 </head>
 <body>
@@ -1074,7 +1129,7 @@ addEventListener('keydown',e=>{
     else interact();
   }
   if(e.code==='KeyT'){player.ammo=player.maxAmmo; if(currentWeaponData())currentWeaponData().ammo=player.ammo; reloadSound();}
-  if(e.code==='KeyR' && player.weapon!=="Sword" && !player.dead && !player.won){
+  if(e.code==='KeyR' && !inTank && !player.dead && !player.won){
     scoped=true;
   }
   if(e.code==='KeyG'&&!inTank)dropActiveWeapon();
@@ -1432,7 +1487,6 @@ function tankExplosion(pos,hitHouse=null,hitEnemy=null){
 const enemyMat=new THREE.MeshStandardMaterial({color:0xa54138});
 const skinMat=new THREE.MeshStandardMaterial({color:0xb97855});
 const darkMat=new THREE.MeshStandardMaterial({color:0x252a32});
-const gunMat=new THREE.MeshStandardMaterial({color:0x25282d,metalness:.35,roughness:.45});
 const vestMat=new THREE.MeshStandardMaterial({color:0x583f32,roughness:.85});
 const armorMat=new THREE.MeshStandardMaterial({color:0xc25c42,roughness:.7});
 const bootMat=new THREE.MeshStandardMaterial({color:0x171a20,roughness:.85});
@@ -1514,7 +1568,7 @@ function makeEnemy(x,z){
 [[0,-28],[18,-34],[-22,-38],[38,-12],[-42,15],[28,32],[-32,38],[55,-42]].forEach(p=>makeEnemy(...p));
 
 function spawnEnemyBullet(enemy){
-  const muzzle=new THREE.Vector3(0,0,-1.34);
+  const muzzle=new THREE.Vector3(0,0,-.84);
   enemy.gun.localToWorld(muzzle);
   const target=camera.position.clone();
   target.x+=(Math.random()-.5)*.55;
@@ -2854,10 +2908,24 @@ function update(){
     const closest=oldPosition.addScaledVector(travel,along);
     const hitPlayer=closest.distanceTo(camera.position)<.65;
     const hitGround=nextPosition.y<=terrainHeightAt(nextPosition.x,nextPosition.z)+.12;
-    if(hitPlayer){
+    let hitHouse=false;
+    for(const house of houseColliders){
+      for(let step=1;step<=8;step++){
+        const sample=oldPosition.clone().addScaledVector(travel,step/8);
+        const dx=sample.x-house.x,dz=sample.z-house.z;
+        const c=Math.cos(-house.rot),sn=Math.sin(-house.rot);
+        const lx=dx*c-dz*sn,lz=dx*sn+dz*c;
+        if(Math.abs(lx)<house.w/2&&Math.abs(lz)<house.d/2&&sample.y<8){
+          hitHouse=true;
+          break;
+        }
+      }
+      if(hitHouse)break;
+    }
+    if(hitPlayer&&!hitHouse){
       damagePlayer(7);
     }
-    if(hitPlayer||hitGround||projectile.life<=0){
+    if(hitPlayer||hitGround||hitHouse||projectile.life<=0){
       scene.remove(projectile.mesh,projectile.trail);
       projectile.trail.geometry.dispose();
       projectile.trail.material.dispose();
@@ -2947,12 +3015,13 @@ function update(){
     if(c.life<=0){scene.remove(c.mesh);casings.splice(i,1)}
   }
 
-  const wantsAim=scoped && player.weapon!=="Sword" && !player.dead && !player.won;
+  const wantsAim=scoped && !player.dead && !player.won;
   const aimedFov=player.weapon==="Heavy Rifle"?24:
     player.weapon==="Rocket Launcher"?42:
     player.weapon==="Shotgun"?48:
     player.weapon==="Minigun"?50:
-    player.weapon==="Rapid SMG"?42:40;
+    player.weapon==="Rapid SMG"?42:
+    player.weapon==="Sword"?55:40;
   const targetFov=wantsAim?aimedFov:normalFov;
   if(Math.abs(camera.fov-targetFov)>.05){
     camera.fov += (targetFov-camera.fov)*Math.min(1,dt*12);
