@@ -406,9 +406,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/+esm';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x8fc9ef);
-scene.fog=new THREE.FogExp2(0xb8d8ee,0.0036);
+scene.fog=new THREE.FogExp2(0xc2d9e8,0.0028);
 
-// Upgraded cinematic skybox.
+const sunDirection=new THREE.Vector3(110,78,-150).normalize();
 const skyGeo=new THREE.SphereGeometry(300,48,28);
 const skyMat=new THREE.ShaderMaterial({
   side:THREE.BackSide,
@@ -416,13 +416,13 @@ const skyMat=new THREE.ShaderMaterial({
     zenith:{value:new THREE.Color(0x3f88c9)},
     upper:{value:new THREE.Color(0x71b4e7)},
     horizon:{value:new THREE.Color(0xc8e4f3)},
-    warm:{value:new THREE.Color(0xf0c79a)}
+    warm:{value:new THREE.Color(0xf0c79a)},
+    sunDirection:{value:sunDirection}
   },
   vertexShader:`
     varying vec3 vWorldPosition;
     void main(){
-      vec4 wp=modelMatrix*vec4(position,1.0);
-      vWorldPosition=wp.xyz;
+      vWorldPosition=position;
       gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
     }
   `,
@@ -432,11 +432,24 @@ const skyMat=new THREE.ShaderMaterial({
     uniform vec3 upper;
     uniform vec3 horizon;
     uniform vec3 warm;
+    uniform vec3 sunDirection;
     void main(){
-      float h=normalize(vWorldPosition).y;
+      vec3 viewDirection=normalize(vWorldPosition);
+      vec3 sunDir=normalize(sunDirection);
+      float h=viewDirection.y;
       vec3 col=mix(horizon,upper,smoothstep(0.02,0.45,h));
       col=mix(col,zenith,smoothstep(0.45,0.95,h));
+      float sunCosine=dot(viewDirection,sunDir);
+      float sunAlignment=max(sunCosine,0.0);
+      float horizonScatter=exp(-abs(h)*7.0);
+      float rayleighPhase=0.75*(1.0+sunCosine*sunCosine);
+      float mieG=0.76;
+      float miePhase=(1.0-mieG*mieG)/
+        (12.56637*pow(max(1.0+mieG*mieG-2.0*mieG*sunCosine,0.02),1.5));
+      col+=vec3(0.055,0.13,0.24)*rayleighPhase*(0.35+horizonScatter);
+      col+=warm*miePhase*0.012;
       col=mix(warm,col,smoothstep(-0.12,0.16,h));
+      col+=vec3(1.0,0.57,0.27)*pow(sunAlignment,18.0)*0.24;
       gl_FragColor=vec4(col,1.0);
     }
   `
@@ -446,10 +459,10 @@ scene.add(skyDome);
 
 // Sun disc and soft halo.
 const sunDisc=new THREE.Mesh(
-  new THREE.SphereGeometry(3.8,24,18),
+  new THREE.SphereGeometry(1.5,24,18),
   new THREE.MeshBasicMaterial({color:0xffe7a8})
 );
-sunDisc.position.set(110,78,-150);
+sunDisc.position.copy(sunDirection).multiplyScalar(200);
 scene.add(sunDisc);
 
 const halo=new THREE.Mesh(
@@ -458,10 +471,6 @@ const halo=new THREE.Mesh(
 );
 halo.position.copy(sunDisc.position);
 scene.add(halo);
-
-const sunGlow=new THREE.PointLight(0xffdca0,2.6,220);
-sunGlow.position.copy(sunDisc.position);
-scene.add(sunGlow);
 
 // Better volumetric-looking cloud clusters.
 const cloudCoreMat=new THREE.MeshStandardMaterial({
@@ -538,23 +547,25 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.15;
 document.body.prepend(renderer.domElement);
 
-const hemi=new THREE.HemisphereLight(0xe9f7ff,0x4e663c,2.3);
+const hemi=new THREE.HemisphereLight(0xe9f7ff,0x4e663c,1.25);
 scene.add(hemi);
 
-const sun=new THREE.DirectionalLight(0xfff4df,3.0);
-sun.position.set(45,70,30);
+const sun=new THREE.DirectionalLight(0xfff0d8,3.3);
+sun.position.copy(sunDisc.position);
 sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.near=1;
-sun.shadow.camera.far=180;
-sun.shadow.camera.left=-90;
-sun.shadow.camera.right=90;
-sun.shadow.camera.top=90;
-sun.shadow.camera.bottom=-90;
+sun.shadow.camera.far=400;
+sun.shadow.camera.left=-135;
+sun.shadow.camera.right=135;
+sun.shadow.camera.top=135;
+sun.shadow.camera.bottom=-135;
 sun.shadow.bias=-0.0005;
+sun.shadow.normalBias=0.025;
+sun.shadow.radius=3;
 scene.add(sun);
 
-const fill=new THREE.DirectionalLight(0xa9cfff,.7);
+const fill=new THREE.DirectionalLight(0xa9cfff,.45);
 fill.position.set(-30,25,-20);
 scene.add(fill);
 
@@ -573,7 +584,7 @@ function makeHill(x,z,rx=7,rz=7,height=2.4){
   const hill=new THREE.Mesh(geo,hillMat);
   hill.scale.set(rx,height,rz);
   hill.position.set(x,-height*.32,z);
-  hill.castShadow=false;
+  hill.castShadow=true;
   hill.receiveShadow=true;
   scene.add(hill);
 
@@ -581,6 +592,7 @@ function makeHill(x,z,rx=7,rz=7,height=2.4){
   const cap=new THREE.Mesh(new THREE.SphereGeometry(1,64,40),hillTopMat);
   cap.scale.set(rx*.94,height*.93,rz*.94);
   cap.position.set(x,-height*.25,z);
+  cap.castShadow=true;
   cap.receiveShadow=true;
   scene.add(cap);
 
@@ -1497,6 +1509,33 @@ const enemyProjectiles=[];
 const enemyBulletGeometry=new THREE.SphereGeometry(.09,10,8);
 const enemyBulletMaterial=new THREE.MeshBasicMaterial({color:0xffbd55});
 
+function enemyPositionBlocked(x,z){
+  if(Math.abs(x)>135||Math.abs(z)>135)return true;
+  for(const h of houseColliders){
+    const dx=x-h.x,dz=z-h.z;
+    const c=Math.cos(-h.rot),sn=Math.sin(-h.rot);
+    const lx=dx*c-dz*sn,lz=dx*sn+dz*c;
+    if(Math.abs(lx)<h.w/2+0.8&&Math.abs(lz)<h.d/2+0.8)return true;
+  }
+  return false;
+}
+
+function chooseEnemyRoamTarget(enemy){
+  for(let attempt=0;attempt<12;attempt++){
+    const angle=Math.random()*Math.PI*2;
+    const distance=8+Math.random()*14;
+    const x=THREE.MathUtils.clamp(enemy.group.position.x+Math.cos(angle)*distance,-125,125);
+    const z=THREE.MathUtils.clamp(enemy.group.position.z+Math.sin(angle)*distance,-125,125);
+    if(!enemyPositionBlocked(x,z)){
+      enemy.roamTarget.set(x,0,z);
+      enemy.roamTimer=3+Math.random()*4;
+      return;
+    }
+  }
+  enemy.roamTarget.set(enemy.group.position.x,0,enemy.group.position.z);
+  enemy.roamTimer=0.5;
+}
+
 function eliminateEnemy(enemy){
   if(enemy.dead||!enemies.includes(enemy))return;
   enemy.dead=true;
@@ -1563,18 +1602,26 @@ function makeEnemy(x,z){
   g.userData.kind="enemy";g.userData.label="Enemy";
   g.traverse(o=>{o.userData.parentGroup=g});
   scene.add(g);
-  enemies.push({group:g,gun:heldGun,hp:70,fire:1+Math.random()*2,speed:1.15+Math.random()*.35,dead:false});
+  const enemy={
+    group:g,gun:heldGun,hp:70,fire:1+Math.random()*2,
+    speed:1.15+Math.random()*.35,dead:false,
+    roamTarget:new THREE.Vector3(),roamTimer:0
+  };
+  enemies.push(enemy);
+  chooseEnemyRoamTarget(enemy);
 }
 [[0,-28],[18,-34],[-22,-38],[38,-12],[-42,15],[28,32],[-32,38],[55,-42]].forEach(p=>makeEnemy(...p));
 
-function spawnEnemyBullet(enemy){
+function spawnEnemyBullet(enemy,target){
   const muzzle=new THREE.Vector3(0,0,-.84);
   enemy.gun.localToWorld(muzzle);
-  const target=camera.position.clone();
-  target.x+=(Math.random()-.5)*.55;
-  target.y+=(Math.random()-.5)*.4;
-  target.z+=(Math.random()-.5)*.55;
-  const direction=target.sub(muzzle).normalize();
+  const targetPosition=target===player
+    ?camera.position.clone()
+    :target.group.position.clone().add(new THREE.Vector3(0,1.3,0));
+  targetPosition.x+=(Math.random()-.5)*.4;
+  targetPosition.y+=(Math.random()-.5)*.3;
+  targetPosition.z+=(Math.random()-.5)*.4;
+  const direction=targetPosition.sub(muzzle).normalize();
   const bullet=new THREE.Mesh(enemyBulletGeometry,enemyBulletMaterial);
   bullet.position.copy(muzzle);
   const trailGeometry=new THREE.BufferGeometry();
@@ -1585,7 +1632,10 @@ function spawnEnemyBullet(enemy){
   const trailMaterial=new THREE.LineBasicMaterial({color:0xff7b35,transparent:true,opacity:.85});
   const trail=new THREE.Line(trailGeometry,trailMaterial);
   scene.add(bullet,trail);
-  enemyProjectiles.push({mesh:bullet,trail,velocity:direction.multiplyScalar(27),life:2.2});
+  enemyProjectiles.push({
+    mesh:bullet,trail,velocity:direction.multiplyScalar(27),life:2.2,
+    owner:enemy,target
+  });
 }
 
 const chestMat=new THREE.MeshStandardMaterial({color:0xb77a22,metalness:.15});
@@ -2738,13 +2788,23 @@ function damagePlayer(damage){
 }
 
 function update(){
+  const now=performance.now(),dt=Math.min(.035,(now-prev)/1000);
+  prev=now;
+  skyDome.position.copy(camera.position);
+  sunDisc.position.copy(camera.position).addScaledVector(sunDirection,200);
+  halo.position.copy(sunDisc.position);
+  skyClouds.forEach((cloud,index)=>{
+    cloud.position.x+=(index%2?-.3:.3)*dt;
+    if(cloud.position.x>145)cloud.position.x=-145;
+    if(cloud.position.x< -145)cloud.position.x=145;
+  });
+
   if(!matchStarted){
     renderer.render(scene,camera);
     requestAnimationFrame(update);
     return;
   }
 
-  const now=performance.now(),dt=Math.min(.035,(now-prev)/1000);prev=now;
   if(!inTank){
     camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
   }
@@ -2883,16 +2943,62 @@ function update(){
     }
 
     const pos=e.group.position;
-    const toPlayer=new THREE.Vector3(camera.position.x-pos.x,0,camera.position.z-pos.z);
-    const d=toPlayer.length();
-    if(d>4.5 && d<32){toPlayer.normalize();pos.addScaledVector(toPlayer,e.speed*dt)}
+    let target=null;
+    let targetDistance=Infinity;
+    for(const other of enemies){
+      if(other===e||other.dead)continue;
+      const distance=Math.hypot(other.group.position.x-pos.x,other.group.position.z-pos.z);
+      if(distance<28&&distance<targetDistance){
+        target=other;
+        targetDistance=distance;
+      }
+    }
+    if(!target&&!player.dead&&!player.won){
+      const distance=Math.hypot(camera.position.x-pos.x,camera.position.z-pos.z);
+      if(distance<32){
+        target=player;
+        targetDistance=distance;
+      }
+    }
+
+    let moveDirection=new THREE.Vector3();
+    if(target){
+      const targetPosition=target===player?camera.position:target.group.position;
+      moveDirection.set(targetPosition.x-pos.x,0,targetPosition.z-pos.z);
+      const desiredDistance=target===player?4.5:9;
+      if(targetDistance<desiredDistance-2)moveDirection.negate();
+      else if(targetDistance<=desiredDistance)moveDirection.set(0,0,0);
+    }else{
+      e.roamTimer-=dt;
+      if(e.roamTimer<=0||Math.hypot(e.roamTarget.x-pos.x,e.roamTarget.z-pos.z)<1.5){
+        chooseEnemyRoamTarget(e);
+      }
+      moveDirection.set(e.roamTarget.x-pos.x,0,e.roamTarget.z-pos.z);
+    }
+
+    if(moveDirection.lengthSq()){
+      moveDirection.normalize();
+      const nextX=pos.x+moveDirection.x*e.speed*dt;
+      const nextZ=pos.z+moveDirection.z*e.speed*dt;
+      if(!enemyPositionBlocked(nextX,nextZ)){
+        pos.x=nextX;
+        pos.z=nextZ;
+      }else if(!target){
+        chooseEnemyRoamTarget(e);
+      }
+    }
     pos.y=terrainHeightAt(pos.x,pos.z);
-    e.group.lookAt(camera.position.x,1.3,camera.position.z);
+    if(target){
+      const targetPosition=target===player?camera.position:target.group.position;
+      e.group.rotation.y=Math.atan2(-(targetPosition.x-pos.x),-(targetPosition.z-pos.z));
+    }else if(moveDirection.lengthSq()){
+      e.group.rotation.y=Math.atan2(-moveDirection.x,-moveDirection.z);
+    }
     e.fire-=dt;
-    if(d<24&&e.fire<=0 && !player.dead && !player.won){
-      enemyGunSound(d);
-      spawnEnemyBullet(e);
-      e.fire=1.8+Math.random()*1.5;
+    if(target&&targetDistance<24&&e.fire<=0){
+      enemyGunSound(targetDistance);
+      spawnEnemyBullet(e,target);
+      e.fire=1.1+Math.random()*1.3;
     }
   }
 
@@ -2905,8 +3011,23 @@ function update(){
     const travelLengthSq=travel.lengthSq();
     const toPlayer=camera.position.clone().sub(oldPosition);
     const along=travelLengthSq?THREE.MathUtils.clamp(toPlayer.dot(travel)/travelLengthSq,0,1):0;
-    const closest=oldPosition.addScaledVector(travel,along);
-    const hitPlayer=closest.distanceTo(camera.position)<.65;
+    const closest=oldPosition.clone().addScaledVector(travel,along);
+    const hitPlayer=projectile.target===player&&closest.distanceTo(camera.position)<.65;
+    let hitEnemy=null;
+    if(projectile.target!==player){
+      for(const enemy of enemies){
+        if(enemy.dead||enemy===projectile.owner)continue;
+        const enemyPosition=enemy.group.position.clone().add(new THREE.Vector3(0,1.15,0));
+        const enemyAlong=travelLengthSq
+          ?THREE.MathUtils.clamp(enemyPosition.clone().sub(oldPosition).dot(travel)/travelLengthSq,0,1)
+          :0;
+        const closestToEnemy=oldPosition.clone().addScaledVector(travel,enemyAlong);
+        if(closestToEnemy.distanceTo(enemyPosition)<.72){
+          hitEnemy=enemy;
+          break;
+        }
+      }
+    }
     const hitGround=nextPosition.y<=terrainHeightAt(nextPosition.x,nextPosition.z)+.12;
     let hitHouse=false;
     for(const house of houseColliders){
@@ -2925,7 +3046,10 @@ function update(){
     if(hitPlayer&&!hitHouse){
       damagePlayer(7);
     }
-    if(hitPlayer||hitGround||hitHouse||projectile.life<=0){
+    if(hitEnemy&&!hitHouse){
+      damageEnemy(hitEnemy,14);
+    }
+    if(hitPlayer||hitEnemy||hitGround||hitHouse||projectile.life<=0){
       scene.remove(projectile.mesh,projectile.trail);
       projectile.trail.geometry.dispose();
       projectile.trail.material.dispose();
