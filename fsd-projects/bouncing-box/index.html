@@ -74,6 +74,14 @@
       z-index: 2;
     }
 
+    .box::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      z-index: 1;
+      pointer-events: auto;
+    }
+
     .box.wall-hit {
       animation: wall-pulse 0.28s ease-out;
     }
