@@ -294,7 +294,7 @@ button{pointer-events:auto;border:0;border-radius:12px;background:#2789ef;color:
 </div>
 
 <div id="hud">
-  <div id="help"><b>CONTROLS</b><br>WASD — move<br>Move mouse — look around<br>Left click — shoot<br>E — interact / ammo / heals<br>Right click — pick up weapon<br>1-5 — switch slots • G — drop gun<br>E near tank — enter/exit tank<br>T — reload • Hold R — Heavy Rifle scope<br>Shift — sprint</div>
+  <div id="help"><b>CONTROLS</b><br>WASD — move<br>Move mouse — look around<br>Left click — shoot<br>E — interact / ammo / heals<br>Right click — pick up weapon<br>1-5 — switch slots • G — drop gun<br>E near tank — enter/exit tank<br>T — reload • Hold R — aim down sights<br>Shift — sprint</div>
   <div id="storm">STORM: 100%</div>
   <div id="prompt"></div>
   <div id="target"></div>
@@ -514,7 +514,7 @@ const hillTopMat=new THREE.MeshStandardMaterial({color:0x6a9b51,roughness:1});
 const hills=[];
 
 function makeHill(x,z,rx=7,rz=7,height=2.4){
-  const geo=new THREE.SphereGeometry(1,28,18);
+  const geo=new THREE.SphereGeometry(1,64,40);
   const hill=new THREE.Mesh(geo,hillMat);
   hill.scale.set(rx,height,rz);
   hill.position.set(x,-height*.32,z);
@@ -523,7 +523,7 @@ function makeHill(x,z,rx=7,rz=7,height=2.4){
   scene.add(hill);
 
   // Slightly brighter grassy cap.
-  const cap=new THREE.Mesh(new THREE.SphereGeometry(1,24,14),hillTopMat);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(1,64,40),hillTopMat);
   cap.scale.set(rx*.94,height*.93,rz*.94);
   cap.position.set(x,-height*.25,z);
   cap.receiveShadow=true;
@@ -547,12 +547,18 @@ hillSpots.forEach(h=>makeHill(...h));
 function terrainHeightAt(x,z){
   let height=0;
   for(const h of hills){
-    const nx=(x-h.x)/h.rx;
-    const nz=(z-h.z)/h.rz;
-    const d2=nx*nx+nz*nz;
-    if(d2<1){
-      const y=-h.height*.25+h.height*Math.sqrt(1-d2);
-      height=Math.max(height,y);
+    const hillX=(x-h.x)/h.rx;
+    const hillZ=(z-h.z)/h.rz;
+    const hillD2=hillX*hillX+hillZ*hillZ;
+    if(hillD2<1){
+      height=Math.max(height,-h.height*.32+h.height*Math.sqrt(1-hillD2));
+    }
+
+    const capX=(x-h.x)/(h.rx*.94);
+    const capZ=(z-h.z)/(h.rz*.94);
+    const capD2=capX*capX+capZ*capZ;
+    if(capD2<1){
+      height=Math.max(height,-h.height*.25+h.height*.93*Math.sqrt(1-capD2));
     }
   }
   return Math.max(0,height);
@@ -588,6 +594,8 @@ const roadPatchMat=new THREE.MeshStandardMaterial({color:0x3f4143,roughness:1});
 const roadDustMat=new THREE.MeshStandardMaterial({color:0x77716a,roughness:1,transparent:true,opacity:.42});
 const crackMat=new THREE.MeshBasicMaterial({color:0x232426});
 const roadStoneMat=new THREE.MeshStandardMaterial({color:0x777b7d,roughness:1});
+const roadMarkMat=new THREE.MeshStandardMaterial({color:0xc6b774,roughness:.9});
+const curbMat=new THREE.MeshStandardMaterial({color:0x777a79,roughness:.95});
 function box(x,y,z,w,h,d,mat,cast=true){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
   m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;scene.add(m);return m;
@@ -648,6 +656,25 @@ for(let i=0;i<20;i++){
 const lineMat=new THREE.MeshStandardMaterial({color:0xd8c36e,roughness:.9});
 for(let z=-140;z<=140;z+=8) box(0,.075,z,.16,.025,3.2,lineMat,false);
 for(let x=-140;x<=140;x+=8) box(x,.076,0,3.2,.025,.16,lineMat,false);
+
+// Raised road edge markers and weathered curb stones.
+for(const axis of ["x","z"]){
+  for(const side of [-1,1]){
+    for(let n=-140;n<=140;n+=4){
+      const isHorizontal=axis==="x";
+      box(
+        isHorizontal?n:side*3.72,
+        .085,
+        isHorizontal?side*3.72:n,
+        isHorizontal?1.55:.12,
+        .035,
+        isHorizontal?.12:1.55,
+        n%8===0?roadMarkMat:curbMat,
+        false
+      );
+    }
+  }
+}
 
 // subtle shoulder stones
 for(let i=0;i<90;i++){
@@ -767,6 +794,7 @@ const doorMat=new THREE.MeshStandardMaterial({color:0x5a3c2b,roughness:.7});
 const porchMat=new THREE.MeshStandardMaterial({color:0x8d755b,roughness:.9});
 const knobMat=new THREE.MeshStandardMaterial({color:0xd3a943,metalness:.65,roughness:.3});
 const houseColliders=[];
+const houseDebris=[];
 
 const buildings=[
   {x:18,z:18,style:0,rot:0},
@@ -827,6 +855,17 @@ function makeHouse(x,z,rot=0,style=0){
 
   const foundation=new THREE.Mesh(new THREE.BoxGeometry(w+.45,.45,d+.45),trimMat);
   foundation.position.y=.23;foundation.receiveShadow=true;g.add(foundation);
+  const cornerTrimMat=new THREE.MeshStandardMaterial({
+    color:style===1?0x737f89:style===2?0x8d7055:0x9d907f,
+    roughness:.78
+  });
+  for(const sx of [-1,1]){
+    for(const sz of [-1,1]){
+      const corner=new THREE.Mesh(new THREE.BoxGeometry(.22,h-.2,.22),cornerTrimMat);
+      corner.position.set(sx*(w/2-.12),h/2,sz*(d/2-.12));
+      g.add(corner);
+    }
+  }
 
   // fitted roof
   const halfDepth=d/2+.35;
@@ -843,12 +882,40 @@ function makeHouse(x,z,rot=0,style=0){
   backRoof.position.set(0,h+rise/2,halfDepth/2);
   backRoof.rotation.x=roofAngle;g.add(backRoof);
 
+  const gableGeometry=new THREE.BufferGeometry();
+  gableGeometry.setAttribute("position",new THREE.Float32BufferAttribute([
+    0,h,-halfDepth,
+    0,h,halfDepth,
+    0,h+rise,0
+  ],3));
+  gableGeometry.setIndex([0,1,2]);
+  gableGeometry.computeVertexNormals();
+  const gableMat=bodyMat.clone();
+  gableMat.side=THREE.DoubleSide;
+  for(const side of [-1,1]){
+    const gable=new THREE.Mesh(gableGeometry,gableMat);
+    gable.position.x=side*w/2;
+    g.add(gable);
+  }
+
   const ridge=new THREE.Mesh(new THREE.BoxGeometry(w+.7,.16,.22),trimMat);
   ridge.position.set(0,h+rise,0);g.add(ridge);
 
   // door
   const door=new THREE.Mesh(new THREE.BoxGeometry(1.35,2.45,.13),doorMat);
   door.position.set(0,1.42,-d/2-.07);g.add(door);
+  for(const side of [-1,1]){
+    const doorFrameSide=new THREE.Mesh(new THREE.BoxGeometry(.12,2.62,.18),cornerTrimMat);
+    doorFrameSide.position.set(side*.74,1.42,-d/2-.16);g.add(doorFrameSide);
+  }
+  const doorFrameTop=new THREE.Mesh(new THREE.BoxGeometry(1.58,.14,.18),cornerTrimMat);
+  doorFrameTop.position.set(0,2.73,-d/2-.16);g.add(doorFrameTop);
+  const doorPanel=new THREE.Mesh(new THREE.BoxGeometry(1.08,.58,.035),trimMat);
+  doorPanel.position.set(0,1.68,-d/2-.17);g.add(doorPanel);
+  const doorKnob=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),knobMat);
+  doorKnob.position.set(.48,1.35,-d/2-.19);g.add(doorKnob);
+  const porchLight=new THREE.Mesh(new THREE.BoxGeometry(.28,.36,.18),knobMat);
+  porchLight.position.set(-1.12,2.4,-d/2-.18);g.add(porchLight);
 
   // front/back windows
   const winXs=style===2?[-2.4,2.4]:[-3,3];
@@ -856,6 +923,17 @@ function makeHouse(x,z,rot=0,style=0){
     for(const wz of [-d/2-.07,d/2+.07]){
       const win=new THREE.Mesh(new THREE.BoxGeometry(1.55,1.45,.11),windowMat);
       win.position.set(wx,2.9,wz);g.add(win);
+      const faceOffset=Math.sign(wz)*.06;
+      for(const side of [-1,1]){
+        const frameSide=new THREE.Mesh(new THREE.BoxGeometry(.09,1.62,.12),cornerTrimMat);
+        frameSide.position.set(wx+side*.82,2.9,wz+faceOffset);g.add(frameSide);
+        const frameTop=new THREE.Mesh(new THREE.BoxGeometry(1.72,.09,.12),cornerTrimMat);
+        frameTop.position.set(wx,2.9+side*.81,wz+faceOffset);g.add(frameTop);
+      }
+      const mullionV=new THREE.Mesh(new THREE.BoxGeometry(.07,1.4,.08),trimMat);
+      mullionV.position.set(wx,2.9,wz+faceOffset*1.25);g.add(mullionV);
+      const mullionH=new THREE.Mesh(new THREE.BoxGeometry(1.5,.07,.08),trimMat);
+      mullionH.position.set(wx,2.9,wz+faceOffset*1.25);g.add(mullionH);
       const trimTop=new THREE.Mesh(new THREE.BoxGeometry(1.85,.13,.15),trimMat);
       trimTop.position.set(wx,3.68,wz);g.add(trimTop);
       const trimBottom=trimTop.clone();trimBottom.position.y=2.12;g.add(trimBottom);
@@ -866,6 +944,17 @@ function makeHouse(x,z,rot=0,style=0){
   for(const sx of [-w/2-.07,w/2+.07]){
     const win=new THREE.Mesh(new THREE.BoxGeometry(.11,1.45,1.55),windowMat);
     win.position.set(sx,2.9,0);g.add(win);
+    const faceOffset=Math.sign(sx)*.06;
+    for(const side of [-1,1]){
+      const frameSide=new THREE.Mesh(new THREE.BoxGeometry(.12,1.62,.09),cornerTrimMat);
+      frameSide.position.set(sx+faceOffset,2.9,side*.82);g.add(frameSide);
+      const frameTop=new THREE.Mesh(new THREE.BoxGeometry(.12,.09,1.72),cornerTrimMat);
+      frameTop.position.set(sx+faceOffset,2.9+side*.81,0);g.add(frameTop);
+    }
+    const mullionV=new THREE.Mesh(new THREE.BoxGeometry(.08,1.4,.07),trimMat);
+    mullionV.position.set(sx+faceOffset*1.25,2.9,0);g.add(mullionV);
+    const mullionH=new THREE.Mesh(new THREE.BoxGeometry(.08,.07,1.5),trimMat);
+    mullionH.position.set(sx+faceOffset*1.25,2.9,0);g.add(mullionH);
   }
 
   // style variations
@@ -899,10 +988,50 @@ function makeHouse(x,z,rot=0,style=0){
   scene.add(g);
 
   // collision stored as oriented boxes
-  houseColliders.push({x,z,w,d,rot});
+  houseColliders.push({x,z,w,d,rot,group:g,destroyed:false});
 }
 
 buildings.forEach(h=>makeHouse(h.x,h.z,h.rot,h.style));
+
+function destroyHouse(house,impactPos){
+  if(house.destroyed)return;
+  house.destroyed=true;
+  scene.remove(house.group);
+  const colliderIndex=houseColliders.indexOf(house);
+  if(colliderIndex!==-1)houseColliders.splice(colliderIndex,1);
+  const debrisMats=[
+    new THREE.MeshStandardMaterial({color:0x8b765e,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0x654532,roughness:.88}),
+    new THREE.MeshStandardMaterial({color:0x777a7c,roughness:.9}),
+    new THREE.MeshStandardMaterial({color:0xc8bda9,roughness:.9})
+  ];
+  const debrisCount=22;
+  for(let i=0;i<debrisCount;i++){
+    const size=.28+Math.random()*.62;
+    const chunk=new THREE.Mesh(
+      new THREE.BoxGeometry(size,.18+Math.random()*.55,size),
+      debrisMats[i%debrisMats.length]
+    );
+    chunk.position.set(
+      house.x+(Math.random()-.5)*house.w,
+      1+Math.random()*5,
+      house.z+(Math.random()-.5)*house.d
+    );
+    chunk.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
+    chunk.castShadow=true;
+    scene.add(chunk);
+    const direction=chunk.position.clone().sub(impactPos);
+    direction.y=Math.abs(direction.y)+1.4;
+    if(direction.lengthSq()<.01)direction.set(Math.random()-.5,1,Math.random()-.5);
+    direction.normalize();
+    houseDebris.push({
+      mesh:chunk,
+      velocity:direction.multiplyScalar(4+Math.random()*9),
+      spin:new THREE.Vector3(Math.random()*8,Math.random()*8,Math.random()*8),
+      life:3.2+Math.random()*1.2
+    });
+  }
+}
 
 // distant mountains for a richer horizon
 const mountainMat=new THREE.MeshStandardMaterial({color:0x71839a,roughness:1});
@@ -945,9 +1074,8 @@ addEventListener('keydown',e=>{
     else interact();
   }
   if(e.code==='KeyT'){player.ammo=player.maxAmmo; if(currentWeaponData())currentWeaponData().ammo=player.ammo; reloadSound();}
-  if(e.code==='KeyR' && player.weapon==="Heavy Rifle" && !player.dead && !player.won){
+  if(e.code==='KeyR' && player.weapon!=="Sword" && !player.dead && !player.won){
     scoped=true;
-    gunView.visible=false;
   }
   if(e.code==='KeyG'&&!inTank)dropActiveWeapon();
   if(e.code==='Digit1'&&!inTank)switchSlot(0);
@@ -961,13 +1089,12 @@ addEventListener('keyup',e=>{
   keys[e.code]=false;
   if(e.code==='KeyR'){
     scoped=false;
-    gunView.visible=true;
   }
 });
 
 document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement!==renderer.domElement)return;
-  const scopeFactor=(scoped && player.weapon==="Heavy Rifle")?.42:1;
+  const scopeFactor=scoped?.55:1;
   yaw-=e.movementX*.0025*scopeFactor;
   pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0025*scopeFactor,-Math.PI/2+.01,Math.PI/2-.01);
 });
@@ -998,6 +1125,8 @@ addEventListener('mousedown',e=>{
   if(e.button===0){
     if(inTank){
       fireTankShell();
+    }else if(player.weapon==="Sword"){
+      swingSword();
     }else{
       fireHeld=true;
       shoot();
@@ -1053,9 +1182,13 @@ for(const side of [-1,1]){
   const fender=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,6.7),tankBodyMat);
   fender.position.set(side*1.65,1.52,0); tank.add(fender);
 
-  for(let z=-3.25;z<=3.25;z+=.48){
+  for(let z=-3.25;z<=3.25;z+=.36){
     const tread=new THREE.Mesh(new THREE.BoxGeometry(.82,.14,.34),tankTrackMat);
     tread.position.set(side*2.28,1.38,z); tank.add(tread);
+    for(const edge of [-1,1]){
+      const rivet=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),tankTrimMat);
+      rivet.position.set(side*2.28+edge*.15,1.47,z);tank.add(rivet);
+    }
   }
 
   for(let z=-2.65;z<=2.65;z+=1.05){
@@ -1077,6 +1210,13 @@ for(let x=-1.25;x<=1.25;x+=.5){
 for(const x of [-1.48,1.48]){
   const storage=new THREE.Mesh(new THREE.BoxGeometry(.65,.55,.95),tankBodyMat);
   storage.position.set(x,2.42,1.45); tank.add(storage);
+  const handle=new THREE.Mesh(new THREE.TorusGeometry(.16,.035,8,14),tankDarkMat);
+  handle.rotation.x=Math.PI/2;
+  handle.position.set(x,2.75,1.45);tank.add(handle);
+}
+for(let i=0;i<8;i++){
+  const vent=new THREE.Mesh(new THREE.BoxGeometry(.20,.055,.68),tankDarkMat);
+  vent.position.set(-.70+i*.20,2.54,2.10);tank.add(vent);
 }
 // Turret group rotates separately.
 const tankTurret=new THREE.Group();
@@ -1097,6 +1237,12 @@ tankTurret.add(turretTop);
 for(const side of [-1,1]){
   const armor=new THREE.Mesh(new THREE.BoxGeometry(.55,.72,1.65),tankBodyMat);
   armor.position.set(side*1.35,.05,-.48); armor.rotation.y=side*.12; tankTurret.add(armor);
+  for(let boltIndex=0;boltIndex<4;boltIndex++){
+    const bolt=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.035,10),tankTrimMat);
+    bolt.rotation.x=Math.PI/2;
+    bolt.position.set(side*1.35,.22-(boltIndex%2)*.34,-1.32+Math.floor(boltIndex/2)*.42);
+    tankTurret.add(bolt);
+  }
 }
 const opticBase=new THREE.Mesh(new THREE.BoxGeometry(.62,.34,.58),tankDarkMat);
 opticBase.position.set(-.62,.95,-.30); tankTurret.add(opticBase);
@@ -1125,6 +1271,16 @@ const muzzleBrake=new THREE.Mesh(new THREE.CylinderGeometry(.23,.23,.5,14),tankD
 muzzleBrake.rotation.x=Math.PI/2;
 muzzleBrake.position.set(0,0,-5.50);
 tankGunPivot.add(muzzleBrake);
+for(const side of [-1,1]){
+  const port=new THREE.Mesh(new THREE.BoxGeometry(.16,.24,.15),tankTrimMat);
+  port.position.set(side*.15,0,-5.52);tankGunPivot.add(port);
+}
+const barrelBandMat=new THREE.MeshStandardMaterial({color:0x3a423c,metalness:.65,roughness:.38});
+for(const z of [-1.45,-2.0,-4.55]){
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.11,14),barrelBandMat);
+  band.rotation.x=Math.PI/2;
+  band.position.set(0,0,z);tankGunPivot.add(band);
+}
 
 // Hatch + antenna
 const hatch=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.16,16),tankDarkMat);
@@ -1150,6 +1306,7 @@ function enterOrExitTank(){
 
   if(inTank){
     inTank=false;
+    stopTankEngine();
     tankCamReady=false;
     camera.position.set(
       tank.position.x+Math.cos(tank.rotation.y+Math.PI/2)*4,
@@ -1168,6 +1325,7 @@ function enterOrExitTank(){
   const d=new THREE.Vector2(camera.position.x-tank.position.x,camera.position.z-tank.position.z).length();
   if(d<4.5){
     inTank=true;
+    startTankEngine();
     fireHeld=false;
     scoped=false;
     tankCamReady=false;
@@ -1189,7 +1347,7 @@ function tankFireSound(){
   boom.frequency.exponentialRampToValueAtTime(18,t+.30);
   g.gain.setValueAtTime(.48,t);
   g.gain.exponentialRampToValueAtTime(.001,t+.34);
-  boom.connect(g);g.connect(audioCtx.destination);
+  boom.connect(g);routeSound(g);
   boom.start(t);boom.stop(t+.35);
 
   const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.22),audioCtx.sampleRate);
@@ -1197,7 +1355,7 @@ function tankFireSound(){
   for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
   const n=audioCtx.createBufferSource(),ng=audioCtx.createGain();
   n.buffer=buffer;ng.gain.setValueAtTime(.42,t);ng.gain.exponentialRampToValueAtTime(.001,t+.22);
-  n.connect(ng);ng.connect(audioCtx.destination);n.start(t);
+  n.connect(ng);routeSound(ng);n.start(t);
 }
 
 function fireTankShell(){
@@ -1242,7 +1400,7 @@ function fireTankShell(){
   tankShells.push({mesh:shell,vel:dir.multiplyScalar(38),life:4.0});
 }
 
-function tankExplosion(pos){
+function tankExplosion(pos,hitHouse=null,hitEnemy=null){
   explosionSound();
 
   const blast=new THREE.Mesh(
@@ -1258,10 +1416,12 @@ function tankExplosion(pos){
 
   tankExplosions.push({mesh:blast,light:blastLight,life:.55,max:.55});
 
+  if(hitHouse)destroyHouse(hitHouse,pos);
+
   // A direct or nearby shell eliminates enemies inside the blast radius.
   for(const e of [...enemies]){
     const d=e.group.position.distanceTo(pos);
-    if(d<10){
+    if(!e.dead&&(e===hitEnemy||d<10)){
       e.hp=0;
       eliminateEnemy(e);
     }
@@ -1273,32 +1433,106 @@ const enemyMat=new THREE.MeshStandardMaterial({color:0xa54138});
 const skinMat=new THREE.MeshStandardMaterial({color:0xb97855});
 const darkMat=new THREE.MeshStandardMaterial({color:0x252a32});
 const gunMat=new THREE.MeshStandardMaterial({color:0x25282d,metalness:.35,roughness:.45});
+const vestMat=new THREE.MeshStandardMaterial({color:0x583f32,roughness:.85});
+const armorMat=new THREE.MeshStandardMaterial({color:0xc25c42,roughness:.7});
+const bootMat=new THREE.MeshStandardMaterial({color:0x171a20,roughness:.85});
+const detailMat=new THREE.MeshStandardMaterial({color:0xd5bf83,roughness:.7});
+const eyeMat=new THREE.MeshStandardMaterial({color:0x171b21,roughness:.5});
 const enemies=[];
+const enemyProjectiles=[];
+const enemyBulletGeometry=new THREE.SphereGeometry(.09,10,8);
+const enemyBulletMaterial=new THREE.MeshBasicMaterial({color:0xffbd55});
 
 function eliminateEnemy(enemy){
-  const index=enemies.indexOf(enemy);
-  if(index<0)return;
-  scene.remove(enemy.group);
-  enemies.splice(index,1);
+  if(enemy.dead||!enemies.includes(enemy))return;
+  enemy.dead=true;
+  enemy.deathTime=0;
+}
+
+function damageEnemy(enemy,damage){
+  if(enemy.dead)return;
+  enemy.hp-=damage;
+  if(enemy.hp<=0)eliminateEnemy(enemy);
 }
 
 function makeEnemy(x,z){
   const g=new THREE.Group();
-  const torso=new THREE.Mesh(new THREE.BoxGeometry(.72,1.05,.42),enemyMat);torso.position.y=1.4;g.add(torso);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),skinMat);head.position.y=2.15;g.add(head);
-  const leg1=new THREE.Mesh(new THREE.BoxGeometry(.24,.9,.26),darkMat);leg1.position.set(-.2,.55,0);g.add(leg1);
+  function part(geometry,material,x,y,z){
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.position.set(x,y,z);
+    g.add(mesh);
+    return mesh;
+  }
+
+  part(new THREE.BoxGeometry(.72,1.05,.42),enemyMat,0,1.4,0);
+  part(new THREE.BoxGeometry(.62,.68,.47),vestMat,0,1.45,-.015);
+  part(new THREE.BoxGeometry(.54,.22,.08),armorMat,0,1.62,-.29);
+  part(new THREE.BoxGeometry(.22,.22,.08),detailMat,-.15,1.43,-.285);
+  part(new THREE.BoxGeometry(.22,.22,.08),detailMat,.15,1.43,-.285);
+  part(new THREE.BoxGeometry(.78,.14,.46),darkMat,0,1.0,0);
+  part(new THREE.BoxGeometry(.12,.09,.49),detailMat,0,1.0,-.015);
+
+  part(new THREE.SphereGeometry(.28,18,14),skinMat,0,2.15,0);
+  part(new THREE.BoxGeometry(.42,.13,.42),darkMat,0,2.34,0);
+  part(new THREE.BoxGeometry(.36,.055,.035),armorMat,0,2.24,-.255);
+  part(new THREE.SphereGeometry(.035,8,6),eyeMat,-.09,2.18,-.255);
+  part(new THREE.SphereGeometry(.035,8,6),eyeMat,.09,2.18,-.255);
+
+  const leg1=part(new THREE.BoxGeometry(.24,.9,.26),darkMat,-.2,.55,0);
   const leg2=leg1.clone();leg2.position.x=.2;g.add(leg2);
-  const arm1=new THREE.Mesh(new THREE.BoxGeometry(.2,.9,.2),enemyMat);arm1.position.set(-.48,1.4,0);g.add(arm1);
-  const arm2=arm1.clone();arm2.position.x=.48;g.add(arm2);
-  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1.0),gunMat);rifle.position.set(.38,1.5,-.45);g.add(rifle);
-  g.position.set(x,0,z);
+  part(new THREE.BoxGeometry(.30,.20,.42),bootMat,-.2,.16,-.06);
+  part(new THREE.BoxGeometry(.30,.20,.42),bootMat,.2,.16,-.06);
+  part(new THREE.BoxGeometry(.28,.24,.30),armorMat,-.2,.67,-.16);
+  part(new THREE.BoxGeometry(.28,.24,.30),armorMat,.2,.67,-.16);
+
+  function armBetween(start,end,width,material){
+    const direction=end.clone().sub(start);
+    const arm=new THREE.Mesh(new THREE.BoxGeometry(width,direction.length(),width),material);
+    arm.position.copy(start).add(end).multiplyScalar(.5);
+    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());
+    g.add(arm);
+  }
+  armBetween(new THREE.Vector3(-.43,1.76,0),new THREE.Vector3(-.34,1.48,-.30),.23,enemyMat);
+  armBetween(new THREE.Vector3(.43,1.76,0),new THREE.Vector3(.34,1.48,-.30),.23,enemyMat);
+  armBetween(new THREE.Vector3(-.34,1.48,-.30),new THREE.Vector3(-.10,1.43,-.75),.18,vestMat);
+  armBetween(new THREE.Vector3(.34,1.48,-.30),new THREE.Vector3(.10,1.43,-.75),.18,vestMat);
+  part(new THREE.BoxGeometry(.28,.24,.27),armorMat,-.49,1.73,-.02);
+  part(new THREE.BoxGeometry(.28,.24,.27),armorMat,.49,1.73,-.02);
+  part(new THREE.BoxGeometry(.46,.60,.2),darkMat,0,1.48,.31);
+
+  const heldGun=makeDetailedGun("Rapid SMG");
+  heldGun.scale.setScalar(.36);
+  heldGun.position.set(0,1.46,-.54);
+  g.add(heldGun);
+  g.position.set(x,terrainHeightAt(x,z),z);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
   g.userData.kind="enemy";g.userData.label="Enemy";
   g.traverse(o=>{o.userData.parentGroup=g});
   scene.add(g);
-  enemies.push({group:g,hp:70,fire:1+Math.random()*2,speed:1.15+Math.random()*.35});
+  enemies.push({group:g,gun:heldGun,hp:70,fire:1+Math.random()*2,speed:1.15+Math.random()*.35,dead:false});
 }
 [[0,-28],[18,-34],[-22,-38],[38,-12],[-42,15],[28,32],[-32,38],[55,-42]].forEach(p=>makeEnemy(...p));
+
+function spawnEnemyBullet(enemy){
+  const muzzle=new THREE.Vector3(0,0,-1.34);
+  enemy.gun.localToWorld(muzzle);
+  const target=camera.position.clone();
+  target.x+=(Math.random()-.5)*.55;
+  target.y+=(Math.random()-.5)*.4;
+  target.z+=(Math.random()-.5)*.55;
+  const direction=target.sub(muzzle).normalize();
+  const bullet=new THREE.Mesh(enemyBulletGeometry,enemyBulletMaterial);
+  bullet.position.copy(muzzle);
+  const trailGeometry=new THREE.BufferGeometry();
+  trailGeometry.setAttribute("position",new THREE.Float32BufferAttribute([
+    muzzle.x-direction.x*.95,muzzle.y-direction.y*.95,muzzle.z-direction.z*.95,
+    muzzle.x,muzzle.y,muzzle.z
+  ],3));
+  const trailMaterial=new THREE.LineBasicMaterial({color:0xff7b35,transparent:true,opacity:.85});
+  const trail=new THREE.Line(trailGeometry,trailMaterial);
+  scene.add(bullet,trail);
+  enemyProjectiles.push({mesh:bullet,trail,velocity:direction.multiplyScalar(27),life:2.2});
+}
 
 const chestMat=new THREE.MeshStandardMaterial({color:0xb77a22,metalness:.15});
 const goldMat=new THREE.MeshStandardMaterial({color:0xffd55f,metalness:.55});
@@ -1355,6 +1589,8 @@ function makeDetailedGun(name){
   const polymer=new THREE.MeshStandardMaterial({color:0x20242a,roughness:.62});
   const wood=new THREE.MeshStandardMaterial({color:0x704329,roughness:.72});
   const woodDark=new THREE.MeshStandardMaterial({color:0x4d2e1f,roughness:.75});
+  const opticMat=new THREE.MeshStandardMaterial({color:0x5a89a6,metalness:.2,roughness:.08,transparent:true,opacity:.78});
+  const accentMat=new THREE.MeshStandardMaterial({color:0xb68b3a,metalness:.82,roughness:.22});
 
   function b(w,h,d,x,y,z,mat,rx=0,ry=0,rz=0){
     const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
@@ -1379,9 +1615,11 @@ function makeDetailedGun(name){
     b(.22,.22,.55,0,.10,-.10,polymer);
   }else if(name==="Sword"){
     const blade=new THREE.MeshStandardMaterial({color:0xc8d2dc,metalness:.88,roughness:.16});
-    b(.12,.06,1.75,0,0,-.60,blade,0,0,.04);
-    b(.64,.10,.10,0,0,.33,wood,0,0,0);
-    b(.18,.52,.18,0,-.34,.40,woodDark,-.12);
+    b(.12,1.58,.07,0,.91,0,blade);
+    b(.035,1.52,.025,0,.91,-.05,metalMid);
+    b(.64,.10,.12,0,.12,0,wood);
+    b(.18,.42,.18,0,-.15,0,woodDark);
+    b(.24,.16,.22,0,-.44,0,metalDark);
   }else if(name==="Minigun"){
     b(.48,.42,.82,0,0,0,metalDark);
     b(.42,.34,.48,0,0,-.62,metalMid);
@@ -1429,6 +1667,20 @@ function makeDetailedGun(name){
     b(.22,.28,.27,0,-.70,.14,metalDark,.34);
   }
 
+  if(name!=="Sword"){
+    b(.12,.075,.92,0,.19,-.18,metalDark);
+    for(let z=-.52;z<=.16;z+=.17){
+      b(.23,.035,.055,0,.235,z,metalMid);
+    }
+    b(.18,.20,.16,0,.29,-.12,metalDark);
+    b(.11,.12,.11,0,.43,-.12,opticMat);
+    for(const side of [-1,1]){
+      for(const z of [-.35,.12,.48]){
+        b(.035,.035,.025,side*.17,.04,z,accentMat);
+      }
+    }
+  }
+
   g.traverse(o=>{
     if(o.isMesh){
       o.castShadow=true;
@@ -1443,7 +1695,10 @@ function dropGun(pos){
   const name=roll<.20?"Rapid SMG":roll<.40?"Heavy Rifle":roll<.58?"Shotgun":roll<.74?"Minigun":roll<.88?"Rocket Launcher":"Sword";
   const g=makeDetailedGun(name);
   g.scale.setScalar(.9);
-  g.position.copy(pos);g.position.y=.55;g.rotation.set(.15,.5,0);
+  g.position.copy(pos);
+  g.position.y=terrainHeightAt(pos.x,pos.z)+.55;
+  if(name==="Sword")g.rotation.set(0,0,0);
+  else g.rotation.set(.15,.5,0);
   g.userData.kind="weapon";g.userData.label=name;
   g.traverse(o=>o.userData.parentGroup=g);scene.add(g);
   dropped.push({group:g,name});
@@ -1641,7 +1896,8 @@ function dropActiveWeapon(){
   const g=makeDetailedGun(item.name);
   g.scale.setScalar(.9);
   g.position.copy(pos);
-  g.rotation.set(.15,.5,0);
+  if(item.name==="Sword")g.rotation.set(0,0,0);
+  else g.rotation.set(.15,.5,0);
   g.userData.kind="weapon";
   g.userData.label=item.name;
   g.traverse(o=>o.userData.parentGroup=g);
@@ -1657,238 +1913,14 @@ function dropActiveWeapon(){
 }
 
 function rebuildViewGun(){
-  while(gunView.children.length){
-    gunView.remove(gunView.children[0]);
-  }
-
-  const metalDark=new THREE.MeshStandardMaterial({color:0x24282e,metalness:.75,roughness:.26});
-  const metalMid=new THREE.MeshStandardMaterial({color:0x3a4048,metalness:.68,roughness:.3});
-  const black=new THREE.MeshStandardMaterial({color:0x101216,metalness:.32,roughness:.5});
-  const polymer=new THREE.MeshStandardMaterial({color:0x20242a,metalness:.08,roughness:.62});
-  const wood=new THREE.MeshStandardMaterial({color:0x704329,metalness:.03,roughness:.72});
-  const woodDark=new THREE.MeshStandardMaterial({color:0x4d2e1f,metalness:.03,roughness:.75});
-  const glass=new THREE.MeshStandardMaterial({color:0x5a89a6,metalness:.2,roughness:.08,transparent:true,opacity:.78});
-  const brass=new THREE.MeshStandardMaterial({color:0xb68b3a,metalness:.82,roughness:.22});
-
-  function boxPart(w,h,d,x,y,z,mat,rx=0,ry=0,rz=0){
-    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
-    m.position.set(x,y,z);
-    m.rotation.set(rx,ry,rz);
-    m.castShadow=true;
-    m.receiveShadow=true;
-    gunView.add(m);
-    return m;
-  }
-
-  function cylPart(r,len,x,y,z,mat,rx=Math.PI/2){
-    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,16),mat);
-    m.rotation.x=rx;
-    m.position.set(x,y,z);
-    m.castShadow=true;
-    gunView.add(m);
-    return m;
-  }
-
-  function ringPart(r,tube,x,y,z,mat){
-    const m=new THREE.Mesh(new THREE.TorusGeometry(r,tube,10,24),mat);
-    m.rotation.y=Math.PI/2;
-    m.position.set(x,y,z);
-    gunView.add(m);
-    return m;
-  }
-
-  if(player.weapon==="Rocket Launcher"){
-    // Large fictional shoulder launcher.
-    cylPart(.20,1.55,.34,-.28,-1.65,metalDark);
-    cylPart(.26,.30,.34,-.28,-2.48,metalMid);
-    cylPart(.24,.34,.34,-.28,-.73,metalMid);
-    boxPart(.24,.50,.24,.34,-.61,-1.20,polymer,-.10);
-    boxPart(.22,.22,.55,.34,-.12,-1.18,polymer);
-    boxPart(.10,.14,.16,.34,-.02,-1.60,black);
-    boxPart(.34,.12,.18,.34,-.14,-.78,woodDark);
-
-    gunView.position.set(.08,.10,.18);
-    gunView.rotation.set(-.05,-.015,0);
-    gunView.scale.set(1.18,1.18,1.18);
-  }
-  else if(player.weapon==="Sword"){
-    // Oversized fantasy-style sword held in first person.
-    const bladeMat=new THREE.MeshStandardMaterial({color:0xc8d2dc,metalness:.88,roughness:.16});
-    const edgeMat=new THREE.MeshStandardMaterial({color:0xf3f7fb,metalness:.95,roughness:.10});
-    boxPart(.12,.06,1.75,.34,-.25,-1.45,bladeMat,0,0,.04);
-    boxPart(.04,.07,1.72,.29,-.24,-1.45,edgeMat,0,0,.04);
-    boxPart(.64,.10,.10,.34,-.27,-.53,brass);
-    boxPart(.18,.52,.18,.34,-.57,-.48,woodDark,-.12);
-    boxPart(.24,.20,.24,.34,-.82,-.42,metalDark);
-
-    gunView.position.set(.06,.11,.12);
-    gunView.rotation.set(-.10,-.16,-.08);
-    gunView.scale.set(1.12,1.12,1.12);
-  }
-  else if(player.weapon==="Minigun"){
-    // Oversized dramatic rotary weapon.
-    boxPart(.48,.42,.82,.32,-.30,-.72,metalDark);
-    boxPart(.42,.34,.48,.32,-.30,-1.22,metalMid);
-
-    // six-barrel rotary cluster
-    for(let i=0;i<6;i++){
-      const a=(i/6)*Math.PI*2;
-      const bx=.32+Math.cos(a)*.115;
-      const by=-.28+Math.sin(a)*.115;
-      cylPart(.035,1.45,bx,by,-2.05,black);
-    }
-    cylPart(.16,.16,.32,-.28,-1.38,metalMid);
-
-    // rear motor housing
-    cylPart(.24,.42,.32,-.28,-.46,metalDark);
-    boxPart(.20,.52,.22,.15,-.62,-.60,polymer,-.10);
-    boxPart(.20,.52,.22,.49,-.62,-.60,polymer,-.10);
-
-    // large ammo drum
-    const drum=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.34,18),metalDark);
-    drum.rotation.z=Math.PI/2;drum.position.set(.32,-.72,-.82);gunView.add(drum);
-    ringPart(.24,.035,.49,-.72,-.82,brass);
-
-    // upper carry handle
-    boxPart(.50,.07,.07,.32,-.01,-.62,black);
-    boxPart(.07,.24,.07,.10,-.10,-.62,black);
-    boxPart(.07,.24,.07,.54,-.10,-.62,black);
-
-    gunView.position.set(.05,.10,.10);
-    gunView.rotation.set(-.045,-.015,0);
-    gunView.scale.set(1.18,1.18,1.18);
-  }
-  else if(player.weapon==="Rapid SMG"){
-    // Compact machine-pistol / Uzi-inspired silhouette.
-    boxPart(.34,.44,.72,.34,-.28,-.70,metalDark);
-    boxPart(.30,.18,.44,.34,-.06,-.72,metalMid);
-    cylPart(.055,.44,.34,-.25,-1.28,black);
-    cylPart(.075,.14,.34,-.25,-1.56,metalMid);
-
-    // integrated grip and magazine
-    boxPart(.22,.62,.24,.34,-.66,-.54,polymer,-.07);
-    boxPart(.17,.68,.18,.34,-1.04,-.55,metalDark,-.02);
-
-    // front grip area
-    boxPart(.22,.22,.30,.34,-.30,-1.02,polymer);
-
-    // top rail + sights
-    boxPart(.16,.045,.54,.34,-.01,-.75,black);
-    boxPart(.07,.13,.08,.34,.07,-.95,black);
-    boxPart(.07,.13,.08,.34,.07,-.50,black);
-
-    // folding stock bars
-    boxPart(.05,.05,.68,.14,-.28,-.18,metalMid,0,-.15,0);
-    boxPart(.05,.05,.68,.54,-.28,-.18,metalMid,0,.15,0);
-    boxPart(.42,.09,.12,.34,-.28,.15,polymer);
-
-    gunView.position.set(.03,.01,.02);
-    gunView.rotation.set(-.025,-.03,0);
-    gunView.scale.set(1.05,1.05,1.05);
-  }
-  else if(player.weapon==="Heavy Rifle"){
-    // Long precision rifle with full scope and bipod.
-    boxPart(.30,.28,1.18,.35,-.29,-1.00,metalDark);
-    boxPart(.25,.18,.70,.35,-.08,-1.02,metalMid);
-
-    cylPart(.052,1.82,.35,-.27,-2.42,black);
-    cylPart(.078,.18,.35,-.27,-3.43,metalMid);
-
-    // handguard
-    boxPart(.34,.27,.92,.35,-.29,-1.72,polymer);
-
-    // pistol grip and magazine
-    boxPart(.19,.55,.20,.35,-.60,-.52,polymer,-.16);
-    boxPart(.22,.50,.31,.35,-.59,-1.03,metalDark,.04);
-
-    // stock + cheek rest + butt pad
-    boxPart(.36,.34,.92,.35,-.28,-.10,polymer);
-    boxPart(.30,.12,.48,.35,-.05,-.18,polymer);
-    boxPart(.42,.42,.12,.35,-.28,.40,black);
-
-    // scope mounts
-    boxPart(.10,.17,.10,.35,-.08,-.78,metalMid);
-    boxPart(.10,.17,.10,.35,-.08,-1.26,metalMid);
-
-    // scope body
-    cylPart(.115,.76,.35,.07,-1.02,black);
-    cylPart(.16,.12,.35,.07,-1.46,metalMid);
-    cylPart(.15,.12,.35,.07,-.58,metalMid);
-    ringPart(.135,.018,.35,.07,-1.46,glass);
-    ringPart(.125,.018,.35,.07,-.58,glass);
-
-    // bipod
-    boxPart(.055,.70,.055,.20,-.66,-1.93,metalMid,0,0,.20);
-    boxPart(.055,.70,.055,.50,-.66,-1.93,metalMid,0,0,-.20);
-
-    gunView.position.set(.02,.00,.05);
-    gunView.rotation.set(-.02,-.025,0);
-    gunView.scale.set(1.02,1.02,1.02);
-  }
-  else if(player.weapon==="Shotgun"){
-    // Pump-action shotgun with tube magazine.
-    boxPart(.34,.31,1.12,.35,-.28,-.96,metalDark);
-    boxPart(.30,.18,.62,.35,-.06,-.94,metalMid);
-
-    cylPart(.065,1.55,.35,-.24,-2.15,black);
-    cylPart(.092,1.25,.35,-.39,-1.92,metalMid);
-
-    // wooden stock + pistol wrist
-    boxPart(.40,.36,.82,.35,-.30,-.18,woodDark);
-    boxPart(.22,.48,.22,.35,-.60,-.55,wood,-.13);
-
-    // pump fore-end
-    boxPart(.42,.31,.56,.35,-.34,-1.48,wood);
-    boxPart(.45,.05,.42,.35,-.18,-1.48,woodDark);
-
-    // bead + rear sight
-    boxPart(.06,.10,.06,.35,-.05,-1.70,brass);
-    boxPart(.10,.08,.10,.35,-.05,-.64,black);
-
-    // receiver pins/details
-    boxPart(.025,.08,.025,.20,-.28,-.95,brass);
-    boxPart(.025,.08,.025,.50,-.28,-.95,brass);
-
-    gunView.position.set(.07,.05,.08);
-    gunView.rotation.set(-.035,-.02,0);
-    gunView.scale.set(1.12,1.12,1.12);
-  }
-  else{
-    // AK-style starter rifle with believable receiver, gas tube and curved mag.
-    boxPart(.30,.28,.94,.35,-.29,-.92,metalDark);
-    boxPart(.24,.16,.70,.35,-.08,-1.18,metalMid);
-
-    // barrel + gas system
-    cylPart(.048,1.10,.35,-.26,-1.90,black);
-    cylPart(.070,.18,.35,-.26,-2.54,metalMid);
-    cylPart(.038,.80,.35,-.12,-1.57,metalDark);
-
-    // wood furniture
-    boxPart(.35,.31,.72,.35,-.30,-1.48,wood);
-    boxPart(.36,.35,.82,.35,-.31,-.15,woodDark);
-    boxPart(.42,.42,.10,.35,-.31,.30,black);
-
-    // pistol grip
-    boxPart(.20,.56,.21,.35,-.62,-.56,wood,-.17);
-
-    // curved magazine, made from sections
-    boxPart(.22,.30,.29,.35,-.55,-.95,metalDark,.06);
-    boxPart(.22,.30,.28,.35,-.80,-.90,metalDark,.18);
-    boxPart(.22,.28,.27,.35,-1.02,-.80,metalDark,.34);
-
-    // sights
-    boxPart(.08,.18,.08,.35,-.03,-1.55,black);
-    boxPart(.09,.14,.09,.35,-.03,-.70,black);
-
-    // charging handle / selector details
-    boxPart(.08,.06,.18,.19,-.17,-.88,metalMid);
-    boxPart(.05,.05,.18,.50,-.18,-.84,metalMid);
-
-    gunView.position.set(.02,.00,.03);
-    gunView.rotation.set(-.03,-.035,0);
-    gunView.scale.set(1.06,1.06,1.06);
-  }
-
+  gunView.clear();
+  const model=makeDetailedGun(player.weapon);
+  const viewScale=(player.weapon==="Rocket Launcher"||player.weapon==="Minigun")?.58:.72;
+  model.position.set(.36,-.30,-1.2);
+  model.scale.setScalar(viewScale);
+  gunView.add(model);
+  gunView.position.set(0,0,.03);
+  gunView.rotation.set(0,0,0);
   gunView.visible=true;
 }
 function pickupGun(){
@@ -1915,9 +1947,93 @@ const tracerMat=new THREE.LineBasicMaterial({color:0xffe9a6,transparent:true,opa
 
 // Synthesized weapon audio so the game works without external sound files.
 let audioCtx=null;
+let audioOutput=null;
+let audioReverb=null;
+let tankEngine=null;
+function routeSound(node){
+  node.connect(audioOutput);
+  node.connect(audioReverb);
+}
 function ensureAudio(){
-  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(!audioCtx){
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    audioOutput=audioCtx.createDynamicsCompressor();
+    audioOutput.threshold.value=-18;
+    audioOutput.knee.value=20;
+    audioOutput.ratio.value=4;
+    audioOutput.attack.value=.004;
+    audioOutput.release.value=.24;
+    audioOutput.connect(audioCtx.destination);
+
+    const convolver=audioCtx.createConvolver();
+    const impulse=audioCtx.createBuffer(2,Math.floor(audioCtx.sampleRate*.32),audioCtx.sampleRate);
+    for(let channel=0;channel<impulse.numberOfChannels;channel++){
+      const samples=impulse.getChannelData(channel);
+      for(let i=0;i<samples.length;i++){
+        samples[i]=(Math.random()*2-1)*Math.pow(1-i/samples.length,3);
+      }
+    }
+    convolver.buffer=impulse;
+    const reverbGain=audioCtx.createGain();
+    reverbGain.gain.value=.14;
+    convolver.connect(reverbGain);
+    reverbGain.connect(audioOutput);
+    audioReverb=convolver;
+  }
   if(audioCtx.state==="suspended") audioCtx.resume();
+}
+function startTankEngine(){
+  if(tankEngine)return;
+  ensureAudio();
+  const modes={
+    idle:{frequency:48,type:"sawtooth",level:.075},
+    moving:{frequency:62,type:"sawtooth",level:.12},
+    reverse:{frequency:74,type:"triangle",level:.105}
+  };
+  const gains={};
+  const oscillators=[];
+  for(const [mode,settings] of Object.entries(modes)){
+    const gain=audioCtx.createGain();
+    gain.gain.value=mode==="idle"?settings.level:0;
+    routeSound(gain);
+    for(const harmonic of [1,2.03]){
+      const oscillator=audioCtx.createOscillator();
+      oscillator.type=settings.type;
+      oscillator.frequency.value=settings.frequency*harmonic;
+      const voice=audioCtx.createGain();
+      voice.gain.value=harmonic===1?1:.28;
+      oscillator.connect(voice);
+      voice.connect(gain);
+      oscillator.start();
+      oscillators.push({oscillator,mode,harmonic,baseFrequency:settings.frequency*harmonic});
+    }
+    gains[mode]=gain;
+  }
+  tankEngine={gains,oscillators};
+}
+function updateTankEngine(drive){
+  if(!tankEngine)return;
+  const mode=drive<0?"reverse":drive>0?"moving":"idle";
+  const now=audioCtx.currentTime;
+  for(const [name,gain] of Object.entries(tankEngine.gains)){
+    const level=name===mode?{idle:.075,moving:.12,reverse:.105}[name]:0;
+    gain.gain.setTargetAtTime(level,now,.14);
+  }
+  const rpm=1+Math.abs(drive)*.16;
+  for(const voice of tankEngine.oscillators){
+    voice.oscillator.frequency.setTargetAtTime(voice.baseFrequency*rpm,now,.18);
+  }
+}
+function stopTankEngine(){
+  if(!tankEngine)return;
+  const engine=tankEngine;
+  tankEngine=null;
+  const now=audioCtx.currentTime;
+  for(const gain of Object.values(engine.gains)){
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setTargetAtTime(0,now,.06);
+  }
+  for(const {oscillator} of engine.oscillators)oscillator.stop(now+.35);
 }
 function victoryFanfare(){
   ensureAudio();
@@ -1927,7 +2043,7 @@ function victoryFanfare(){
   const master=audioCtx.createGain();
   master.gain.setValueAtTime(.7,t);
   master.gain.exponentialRampToValueAtTime(.001,t+3.4);
-  master.connect(audioCtx.destination);
+  routeSound(master);
 
   const notes=[
     [523.25,0.00,.32],[659.25,.34,.32],[783.99,.68,.38],
@@ -1979,7 +2095,7 @@ function emptyGunClick(){
   gain.gain.setValueAtTime(.11,t);
   gain.gain.exponentialRampToValueAtTime(.001,t+.045);
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  routeSound(gain);
   osc.start(t);
   osc.stop(t+.05);
 
@@ -1991,7 +2107,7 @@ function emptyGunClick(){
   gain2.gain.setValueAtTime(.065,t+.045);
   gain2.gain.exponentialRampToValueAtTime(.001,t+.075);
   osc2.connect(gain2);
-  gain2.connect(audioCtx.destination);
+  routeSound(gain2);
   osc2.start(t+.045);
   osc2.stop(t+.08);
 }
@@ -2007,7 +2123,7 @@ function rocketSound(){
   boom.frequency.exponentialRampToValueAtTime(30,t+.16);
   bg.gain.setValueAtTime(.34,t);
   bg.gain.exponentialRampToValueAtTime(.001,t+.18);
-  boom.connect(bg);bg.connect(audioCtx.destination);
+  boom.connect(bg);routeSound(bg);
   boom.start(t);boom.stop(t+.2);
 
   const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.22),audioCtx.sampleRate);
@@ -2020,7 +2136,7 @@ function rocketSound(){
   n.buffer=buffer;
   ng.gain.setValueAtTime(.24,t);
   ng.gain.exponentialRampToValueAtTime(.001,t+.22);
-  n.connect(ng);ng.connect(audioCtx.destination);n.start(t);
+  n.connect(ng);routeSound(ng);n.start(t);
 }
 
 function explosionSound(){
@@ -2033,7 +2149,7 @@ function explosionSound(){
   boom.frequency.exponentialRampToValueAtTime(18,t+.42);
   g.gain.setValueAtTime(.48,t);
   g.gain.exponentialRampToValueAtTime(.001,t+.45);
-  boom.connect(g);g.connect(audioCtx.destination);
+  boom.connect(g);routeSound(g);
   boom.start(t);boom.stop(t+.46);
 
   const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.34),audioCtx.sampleRate);
@@ -2046,7 +2162,7 @@ function explosionSound(){
   n.buffer=buffer;
   ng.gain.setValueAtTime(.38,t);
   ng.gain.exponentialRampToValueAtTime(.001,t+.34);
-  n.connect(ng);ng.connect(audioCtx.destination);n.start(t);
+  n.connect(ng);routeSound(ng);n.start(t);
 }
 
 function swordSound(){
@@ -2059,7 +2175,7 @@ function swordSound(){
   o.frequency.exponentialRampToValueAtTime(180,t+.13);
   g.gain.setValueAtTime(.13,t);
   g.gain.exponentialRampToValueAtTime(.001,t+.15);
-  o.connect(g);g.connect(audioCtx.destination);
+  o.connect(g);routeSound(g);
   o.start(t);o.stop(t+.16);
 }
 
@@ -2074,14 +2190,14 @@ function minigunSound(){
   motor.frequency.exponentialRampToValueAtTime(48,t+.055);
   mg.gain.setValueAtTime(.13,t);
   mg.gain.exponentialRampToValueAtTime(.001,t+.07);
-  motor.connect(mg);mg.connect(audioCtx.destination);
+  motor.connect(mg);routeSound(mg);
   motor.start(t);motor.stop(t+.075);
 
   const crack=audioCtx.createOscillator(),cg=audioCtx.createGain();
   crack.type="square";crack.frequency.setValueAtTime(185,t);
   crack.frequency.exponentialRampToValueAtTime(65,t+.045);
   cg.gain.setValueAtTime(.18,t);cg.gain.exponentialRampToValueAtTime(.001,t+.055);
-  crack.connect(cg);cg.connect(audioCtx.destination);
+  crack.connect(cg);routeSound(cg);
   crack.start(t);crack.stop(t+.06);
 }
 
@@ -2097,7 +2213,7 @@ function shotgunSound(){
   boom.frequency.exponentialRampToValueAtTime(28,t+.18);
   bg.gain.setValueAtTime(.42,t);
   bg.gain.exponentialRampToValueAtTime(.001,t+.22);
-  boom.connect(bg);bg.connect(audioCtx.destination);
+  boom.connect(bg);routeSound(bg);
   boom.start(t);boom.stop(t+.23);
 
   // Wide noise blast
@@ -2112,7 +2228,7 @@ function shotgunSound(){
   noise.buffer=buffer;
   ng.gain.setValueAtTime(.45,t);
   ng.gain.exponentialRampToValueAtTime(.001,t+.16);
-  noise.connect(ng);ng.connect(audioCtx.destination);
+  noise.connect(ng);routeSound(ng);
   noise.start(t);
 
   // Metallic pump/clack tail
@@ -2122,7 +2238,7 @@ function shotgunSound(){
     const o=audioCtx.createOscillator(),g=audioCtx.createGain();
     o.type="square";o.frequency.setValueAtTime(420,tt);o.frequency.exponentialRampToValueAtTime(170,tt+.06);
     g.gain.setValueAtTime(.09,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.07);
-    o.connect(g);g.connect(audioCtx.destination);o.start(tt);o.stop(tt+.08);
+    o.connect(g);routeSound(g);o.start(tt);o.stop(tt+.08);
   },140);
 }
 
@@ -2165,7 +2281,7 @@ function gunSound(){
   osc.frequency.exponentialRampToValueAtTime(endFreq,t+duration*.8);
   gain.gain.setValueAtTime(crackVol,t);
   gain.gain.exponentialRampToValueAtTime(.001,t+duration);
-  osc.connect(gain);gain.connect(audioCtx.destination);
+  osc.connect(gain);routeSound(gain);
   osc.start(t);osc.stop(t+duration+.01);
 
   // Muzzle blast/noise layer.
@@ -2180,7 +2296,7 @@ function gunSound(){
   noise.buffer=buffer;
   ng.gain.setValueAtTime(noiseVol,t);
   ng.gain.exponentialRampToValueAtTime(.001,t+duration);
-  noise.connect(ng);ng.connect(audioCtx.destination);
+  noise.connect(ng);routeSound(ng);
   noise.start(t);
 
   // Heavy rifle gets a second low boom layer.
@@ -2192,7 +2308,7 @@ function gunSound(){
     boom.frequency.exponentialRampToValueAtTime(24,t+.22);
     bg.gain.setValueAtTime(.27,t);
     bg.gain.exponentialRampToValueAtTime(.001,t+.24);
-    boom.connect(bg);bg.connect(audioCtx.destination);
+    boom.connect(bg);routeSound(bg);
     boom.start(t);boom.stop(t+.25);
   }
 }
@@ -2203,7 +2319,7 @@ function reloadSound(){
     const o=audioCtx.createOscillator(),g=audioCtx.createGain();
     o.type="triangle";o.frequency.value=i?420:260;
     g.gain.setValueAtTime(.085,t+delay);g.gain.exponentialRampToValueAtTime(.001,t+delay+.06);
-    o.connect(g);g.connect(audioCtx.destination);o.start(t+delay);o.stop(t+delay+.07);
+    o.connect(g);routeSound(g);o.start(t+delay);o.stop(t+delay+.07);
   });
 }
 function footstepSound(){
@@ -2212,7 +2328,7 @@ function footstepSound(){
   const o=audioCtx.createOscillator(),g=audioCtx.createGain();
   o.type="sine";o.frequency.setValueAtTime(95,t);o.frequency.exponentialRampToValueAtTime(55,t+.07);
   g.gain.setValueAtTime(.065,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);
-  o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.09);
+  o.connect(g);routeSound(g);o.start(t);o.stop(t+.09);
 }
 function enemyGunSound(distance){
   ensureAudio();
@@ -2221,7 +2337,7 @@ function enemyGunSound(distance){
   const o=audioCtx.createOscillator(),g=audioCtx.createGain();
   o.type="square";o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(48,t+.08);
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);
-  o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.11);
+  o.connect(g);routeSound(g);o.start(t);o.stop(t+.11);
 
   const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.07),audioCtx.sampleRate);
   const data=buffer.getChannelData(0);
@@ -2230,7 +2346,35 @@ function enemyGunSound(distance){
   n.buffer=buffer;
   ng.gain.setValueAtTime(vol*.75,t);
   ng.gain.exponentialRampToValueAtTime(.001,t+.07);
-  n.connect(ng);ng.connect(audioCtx.destination);n.start(t);
+  n.connect(ng);routeSound(ng);n.start(t);
+}
+
+function playerHitSound(){
+  ensureAudio();
+  const t=audioCtx.currentTime;
+  const impact=audioCtx.createOscillator();
+  const impactGain=audioCtx.createGain();
+  impact.type="triangle";
+  impact.frequency.setValueAtTime(185,t);
+  impact.frequency.exponentialRampToValueAtTime(52,t+.16);
+  impactGain.gain.setValueAtTime(.22,t);
+  impactGain.gain.exponentialRampToValueAtTime(.001,t+.18);
+  impact.connect(impactGain);
+  routeSound(impactGain);
+  impact.start(t);
+  impact.stop(t+.19);
+
+  const buffer=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.1),audioCtx.sampleRate);
+  const samples=buffer.getChannelData(0);
+  for(let i=0;i<samples.length;i++)samples[i]=(Math.random()*2-1)*(1-i/samples.length);
+  const noise=audioCtx.createBufferSource();
+  const noiseGain=audioCtx.createGain();
+  noise.buffer=buffer;
+  noiseGain.gain.setValueAtTime(.09,t);
+  noiseGain.gain.exponentialRampToValueAtTime(.001,t+.1);
+  noise.connect(noiseGain);
+  routeSound(noiseGain);
+  noise.start(t);
 }
 
 function getAimTarget(){
@@ -2238,7 +2382,9 @@ function getAimTarget(){
   const my=-(lookMouse.y/innerHeight)*2+1;
   raycaster.setFromCamera(new THREE.Vector2(mx,my),camera);
   const selectable=[];
-  for(const e of enemies)e.group.traverse(o=>{if(o.isMesh)selectable.push(o)});
+  for(const e of enemies){
+    if(!e.dead)e.group.traverse(o=>{if(o.isMesh)selectable.push(o)});
+  }
   for(const c of chests)c.group.traverse(o=>{if(o.isMesh)selectable.push(o)});
   for(const g of dropped)g.group.traverse(o=>{if(o.isMesh)selectable.push(o)});
   const hit=raycaster.intersectObjects(selectable,false)[0];
@@ -2392,7 +2538,7 @@ function explodeAt(pos){
   // A direct hit or nearby blast instantly eliminates enemies in range.
   for(const e of [...enemies]){
     const d=e.group.position.distanceTo(pos);
-    if(d<6.2){
+    if(!e.dead&&d<6.2){
       e.hp=0;
       eliminateEnemy(e);
     }
@@ -2401,48 +2547,33 @@ function explodeAt(pos){
 }
 
 function swingSword(){
-  if(swordSwinging)return;
-
+  if(swordSwinging||player.dead||player.won)return;
   swordSwinging=true;
   swordSwingTime=0;
+  swordHitResolved=false;
   swordSound();
+}
 
-  // Melee sweep: instant-eliminate every opponent inside the forward swing arc.
+function performSwordSlash(){
+  if(swordHitResolved)return;
+  swordHitResolved=true;
+
   const forward=new THREE.Vector3();
   camera.getWorldDirection(forward);
   forward.y=0;
   forward.normalize();
 
-  const eliminated=[];
-
-  for(const e of [...enemies]){
+  for(const e of enemies){
+    if(e.dead)continue;
     const toEnemy=e.group.position.clone().sub(camera.position);
-    const distance=toEnemy.length();
-
-    if(distance>3.6)continue;
-
     toEnemy.y=0;
+    const distance=toEnemy.length();
+    if(distance>3.6)continue;
     if(toEnemy.lengthSq()===0)continue;
     toEnemy.normalize();
 
-    // Wide ~120 degree melee arc in front of the player.
-    const facing=forward.dot(toEnemy);
-    if(facing>0.48){
-      eliminated.push(e);
-    }
+    if(forward.dot(toEnemy)>.35)damageEnemy(e,999);
   }
-
-  for(const e of eliminated){
-    scene.remove(e.group);
-    enemies.splice(enemies.indexOf(e),1);
-  }
-
-  if(enemies.length===0)triggerVictory();
-
-  // Reset melee lock after the animation finishes.
-  setTimeout(()=>{
-    swordSwinging=false;
-  },360);
 }
 
 function shoot(){
@@ -2483,7 +2614,9 @@ function shoot(){
   raycaster.setFromCamera(new THREE.Vector2(mx,my),camera);
 
   let targets=[];
-  for(const e of enemies)e.group.traverse(o=>{if(o.isMesh){o.userData.enemy=e;targets.push(o)}});
+  for(const e of enemies){
+    if(!e.dead)e.group.traverse(o=>{if(o.isMesh){o.userData.enemy=e;targets.push(o)}});
+  }
 
   const muzzleWorld=new THREE.Vector3(.36,-.30,-2.18);
   camera.localToWorld(muzzleWorld);
@@ -2506,13 +2639,8 @@ function shoot(){
       spawnTracer(muzzleWorld,endPoint);
     }
     for(const [e,dmg] of damaged){
-      e.hp-=dmg;
-      if(e.hp<=0){
-        scene.remove(e.group);
-        enemies.splice(enemies.indexOf(e),1);
-      }
+      damageEnemy(e,dmg);
     }
-    if(enemies.length===0) triggerVictory();
   }else{
     const hits=raycaster.intersectObjects(targets,false);
     const hit=hits[0];
@@ -2523,12 +2651,7 @@ function shoot(){
 
     if(hit){
       const e=hit.object.userData.enemy;
-      e.hp-=player.damage;
-      if(e.hp<=0){
-        scene.remove(e.group);
-        enemies.splice(enemies.indexOf(e),1);
-        if(enemies.length===0) triggerVictory();
-      }
+      damageEnemy(e,player.damage);
     }
   }
 }
@@ -2542,8 +2665,23 @@ scene.add(camera);
 let prev=performance.now(),storm=100;
 let swordSwinging=false;
 let swordSwingTime=0;
+let swordHitResolved=false;
 let weaponBobTime=0;
 let weaponBobX=0,weaponBobY=0,weaponBobRot=0;
+
+function damagePlayer(damage){
+  if(player.dead||player.won)return;
+  player.hp=Math.max(0,player.hp-damage);
+  playerHitSound();
+  if(player.hp===0){
+    stopTankEngine();
+    player.dead=true;
+    fireHeld=false;
+    if(document.pointerLockElement===renderer.domElement)document.exitPointerLock();
+    updateMouseLockPrompt();
+    document.getElementById("gameover").style.display="grid";
+  }
+}
 
 function update(){
   if(!matchStarted){
@@ -2566,6 +2704,7 @@ function update(){
   if(inTank){
     const drive=(keys.KeyW?1:0)-(keys.KeyS?1:0);
     const turn=(keys.KeyA?1:0)-(keys.KeyD?1:0);
+    updateTankEngine(drive);
 
     tank.rotation.y+=turn*dt*1.25*(drive<0?-1:1);
 
@@ -2592,12 +2731,10 @@ function update(){
     tankSmoothedY+=(desiredTankY-tankSmoothedY)*Math.min(1,dt*8);
     tank.position.y=tankSmoothedY;
 
-    // Keep the camera high and far to the tank's left, looking forward.
-    const chaseOffset=new THREE.Vector3(-16,24,4);
-    chaseOffset.applyAxisAngle(new THREE.Vector3(0,1,0),tank.rotation.y);
-    const targetPos=tank.position.clone().add(chaseOffset);
+    // Mount the view just above the cannon, following the barrel's aim.
+    const targetPos=tankGunPivot.localToWorld(new THREE.Vector3(0,.48,-1.15));
     const tankForward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),tank.rotation.y);
-    const targetLook=tank.position.clone().addScaledVector(tankForward,12).add(new THREE.Vector3(0,1.5,0));
+    const targetLook=tank.position.clone().addScaledVector(tankForward,60).add(new THREE.Vector3(0,2.7,0));
 
     if(!tankCamReady){
       tankCamPos.copy(targetPos);
@@ -2605,9 +2742,8 @@ function update(){
       camera.position.copy(tankCamPos);
       tankCamReady=true;
     }else{
-      const camBlend=1-Math.exp(-dt*7.5);
       const lookBlend=1-Math.exp(-dt*9.0);
-      tankCamPos.lerp(targetPos,camBlend);
+      tankCamPos.copy(targetPos);
       tankCamLook.lerp(targetLook,lookBlend);
       camera.position.copy(tankCamPos);
     }
@@ -2623,8 +2759,8 @@ function update(){
     const targetGunPitch=THREE.MathUtils.clamp(Math.asin(aimDirection.y),-1.2,.9);
     tankGunPivot.rotation.x+=(targetGunPitch-tankGunPivot.rotation.x)*Math.min(1,dt*12);
 
-    if(Math.abs(camera.fov-85)>.01){
-      camera.fov+=(85-camera.fov)*Math.min(1,dt*10);
+    if(Math.abs(camera.fov-78)>.01){
+      camera.fov+=(78-camera.fov)*Math.min(1,dt*10);
       camera.updateProjectionMatrix();
     }
 
@@ -2664,7 +2800,7 @@ function update(){
 
     // Follow the solid hill surface.
     const hillY=terrainHeightAt(camera.position.x,camera.position.z);
-    camera.position.y+=(hillY+1.65-camera.position.y)*Math.min(1,dt*14);
+    camera.position.y=hillY+1.65;
 
     footstepTimer-=dt;
     if(footstepTimer<=0){
@@ -2672,31 +2808,68 @@ function update(){
       footstepTimer=keys.ShiftLeft?.26:.38;
     }
   }else footstepTimer=0;
-  camera.position.y=1.65;
-
   for(const l of groundLoot){
     l.group.rotation.y+=dt*.8;
   }
 
   for(const e of [...enemies]){
+    if(e.dead){
+      e.deathTime+=dt;
+      const progress=Math.min(1,e.deathTime/.72);
+      const ease=progress*progress*(3-2*progress);
+      e.group.rotation.x=-ease*.95;
+      e.group.position.y=terrainHeightAt(e.group.position.x,e.group.position.z)-.16*ease;
+      e.group.scale.setScalar(1-.12*ease);
+      if(progress>=1){
+        scene.remove(e.group);
+        enemies.splice(enemies.indexOf(e),1);
+        if(enemies.length===0)triggerVictory();
+      }
+      continue;
+    }
+
     const pos=e.group.position;
     const toPlayer=new THREE.Vector3(camera.position.x-pos.x,0,camera.position.z-pos.z);
     const d=toPlayer.length();
     if(d>4.5 && d<32){toPlayer.normalize();pos.addScaledVector(toPlayer,e.speed*dt)}
+    pos.y=terrainHeightAt(pos.x,pos.z);
     e.group.lookAt(camera.position.x,1.3,camera.position.z);
     e.fire-=dt;
     if(d<24&&e.fire<=0 && !player.dead && !player.won){
       enemyGunSound(d);
-      player.hp-=7;e.fire=1.8+Math.random()*1.5;
-      if(player.hp<=0){
-        player.hp=0;
-        player.dead=true;
-        fireHeld=false;
-        if(document.pointerLockElement===renderer.domElement)document.exitPointerLock();
-        updateMouseLockPrompt();
-        document.getElementById("gameover").style.display="grid";
-      }
+      spawnEnemyBullet(e);
+      e.fire=1.8+Math.random()*1.5;
     }
+  }
+
+  for(let i=enemyProjectiles.length-1;i>=0;i--){
+    const projectile=enemyProjectiles[i];
+    projectile.life-=dt;
+    const oldPosition=projectile.mesh.position.clone();
+    const nextPosition=oldPosition.clone().addScaledVector(projectile.velocity,dt);
+    const travel=nextPosition.clone().sub(oldPosition);
+    const travelLengthSq=travel.lengthSq();
+    const toPlayer=camera.position.clone().sub(oldPosition);
+    const along=travelLengthSq?THREE.MathUtils.clamp(toPlayer.dot(travel)/travelLengthSq,0,1):0;
+    const closest=oldPosition.addScaledVector(travel,along);
+    const hitPlayer=closest.distanceTo(camera.position)<.65;
+    const hitGround=nextPosition.y<=terrainHeightAt(nextPosition.x,nextPosition.z)+.12;
+    if(hitPlayer){
+      damagePlayer(7);
+    }
+    if(hitPlayer||hitGround||projectile.life<=0){
+      scene.remove(projectile.mesh,projectile.trail);
+      projectile.trail.geometry.dispose();
+      projectile.trail.material.dispose();
+      enemyProjectiles.splice(i,1);
+      continue;
+    }
+    projectile.mesh.position.copy(nextPosition);
+    const positions=projectile.trail.geometry.attributes.position;
+    const tail=nextPosition.clone().addScaledVector(projectile.velocity,-.045);
+    positions.setXYZ(0,tail.x,tail.y,tail.z);
+    positions.setXYZ(1,nextPosition.x,nextPosition.y,nextPosition.z);
+    positions.needsUpdate=true;
   }
 
   storm=Math.max(20,storm-dt*.45);
@@ -2774,15 +2947,20 @@ function update(){
     if(c.life<=0){scene.remove(c.mesh);casings.splice(i,1)}
   }
 
-  // Hold R with the Heavy Rifle to look through the scope.
-  const wantsScope=scoped && player.weapon==="Heavy Rifle" && !player.dead && !player.won;
-  const targetFov=wantsScope?24:normalFov;
+  const wantsAim=scoped && player.weapon!=="Sword" && !player.dead && !player.won;
+  const aimedFov=player.weapon==="Heavy Rifle"?24:
+    player.weapon==="Rocket Launcher"?42:
+    player.weapon==="Shotgun"?48:
+    player.weapon==="Minigun"?50:
+    player.weapon==="Rapid SMG"?42:40;
+  const targetFov=wantsAim?aimedFov:normalFov;
   if(Math.abs(camera.fov-targetFov)>.05){
     camera.fov += (targetFov-camera.fov)*Math.min(1,dt*12);
     camera.updateProjectionMatrix();
   }
-  document.getElementById("scopeOverlay").style.display=wantsScope?"block":"none";
-  if(!wantsScope && !player.dead && !inTank) gunView.visible=true;
+  document.getElementById("scopeOverlay").style.display=wantsAim&&player.weapon==="Heavy Rifle"?"block":"none";
+  if(!wantsAim && !player.dead && !inTank) gunView.visible=true;
+  if(wantsAim)gunView.visible=false;
   if(inTank) gunView.visible=false;
 
   // Walking weapon bob animation.
@@ -2808,9 +2986,8 @@ function update(){
   gunView.position.y+=(baseY-weaponBobY-gunView.position.y)*Math.min(1,dt*18);
   gunView.rotation.z+=(weaponBobRot-gunView.rotation.z)*Math.min(1,dt*14);
 
-  if(!player.dead && !player.won){
-    const hillY=terrainHeightAt(camera.position.x,camera.position.z);
-    camera.position.y+=(hillY+1.65-camera.position.y)*Math.min(1,dt*12);
+  if(!inTank && !player.dead && !player.won){
+    camera.position.y=terrainHeightAt(camera.position.x,camera.position.z)+1.65;
   }
 
   // Rocket projectile updates with swept collision detection.
@@ -2829,6 +3006,7 @@ function update(){
 
     // Check the entire movement segment against enemies.
     for(const e of enemies){
+      if(e.dead)continue;
       const enemyPos=e.group.position.clone();
       enemyPos.y+=1.0;
 
@@ -2907,6 +3085,7 @@ function update(){
     if(swordSwinging){
       swordSwingTime+=dt;
       const p=Math.min(1,swordSwingTime/.34);
+      if(p>=.40)performSwordSlash();
 
       // Wind up, slash across the screen, then recover.
       let swing;
@@ -2930,14 +3109,15 @@ function update(){
       gunView.position.x=.06+Math.sin(p*Math.PI)*.08;
       gunView.position.y=.11-Math.sin(p*Math.PI)*.08;
       gunView.position.z=.12-Math.sin(p*Math.PI)*.18;
+      if(p>=1)swordSwinging=false;
     }else{
       // Resting melee stance.
       gunView.position.x+=(.06-gunView.position.x)*Math.min(1,dt*14);
       gunView.position.y+=(.11-gunView.position.y)*Math.min(1,dt*14);
       gunView.position.z+=(.12-gunView.position.z)*Math.min(1,dt*14);
-      gunView.rotation.x+=(-.10-gunView.rotation.x)*Math.min(1,dt*14);
-      gunView.rotation.y+=(-.16-gunView.rotation.y)*Math.min(1,dt*14);
-      gunView.rotation.z+=(-.08-gunView.rotation.z)*Math.min(1,dt*14);
+      gunView.rotation.x+=(0-gunView.rotation.x)*Math.min(1,dt*14);
+      gunView.rotation.y+=(0-gunView.rotation.y)*Math.min(1,dt*14);
+      gunView.rotation.z+=(0-gunView.rotation.z)*Math.min(1,dt*14);
     }
   }
 
@@ -2955,17 +3135,24 @@ function update(){
     sh.life-=dt;
     const oldPos=sh.mesh.position.clone();
     const nextPos=oldPos.clone().addScaledVector(sh.vel,dt);
+    const travel=nextPos.clone().sub(oldPos);
+    const travelLengthSq=travel.lengthSq();
 
     let hit=false;
     let hitPos=nextPos.clone();
+    let hitEnemy=null;
 
     // Enemy collision.
     for(const e of enemies){
+      if(e.dead)continue;
       const ep=e.group.position.clone();
       ep.y+=1;
-      if(ep.distanceTo(nextPos)<1.25){
+      const along=travelLengthSq?THREE.MathUtils.clamp(ep.clone().sub(oldPos).dot(travel)/travelLengthSq,0,1):0;
+      const closest=oldPos.clone().addScaledVector(travel,along);
+      if(ep.distanceTo(closest)<1.25){
         hit=true;
-        hitPos.copy(nextPos);
+        hitPos.copy(closest);
+        hitEnemy=e;
         break;
       }
     }
@@ -2978,14 +3165,17 @@ function update(){
     }
 
     // House collision.
+    let hitHouse=null;
     if(!hit){
       for(const h of houseColliders){
+        if(h.destroyed)continue;
         const dx=nextPos.x-h.x,dz=nextPos.z-h.z;
         const c=Math.cos(-h.rot),sn=Math.sin(-h.rot);
         const lx=dx*c-dz*sn,lz=dx*sn+dz*c;
         if(Math.abs(lx)<h.w/2 && Math.abs(lz)<h.d/2 && nextPos.y<8){
           hit=true;
           hitPos.copy(nextPos);
+          hitHouse=h;
           break;
         }
       }
@@ -2994,9 +3184,31 @@ function update(){
     if(hit||sh.life<=0){
       scene.remove(sh.mesh);
       tankShells.splice(i,1);
-      tankExplosion(hitPos);
+      tankExplosion(hitPos,hitHouse,hitEnemy);
     }else{
       sh.mesh.position.copy(nextPos);
+    }
+  }
+
+  for(let i=houseDebris.length-1;i>=0;i--){
+    const piece=houseDebris[i];
+    piece.life-=dt;
+    piece.velocity.y-=18*dt;
+    piece.mesh.position.addScaledVector(piece.velocity,dt);
+    piece.mesh.rotation.x+=piece.spin.x*dt;
+    piece.mesh.rotation.y+=piece.spin.y*dt;
+    piece.mesh.rotation.z+=piece.spin.z*dt;
+    const terrainY=terrainHeightAt(piece.mesh.position.x,piece.mesh.position.z);
+    if(piece.mesh.position.y<terrainY+.12){
+      piece.mesh.position.y=terrainY+.12;
+      piece.velocity.y=Math.max(0,piece.velocity.y)*-.24;
+      piece.velocity.x*=.72;
+      piece.velocity.z*=.72;
+      piece.spin.multiplyScalar(.75);
+    }
+    if(piece.life<=0){
+      scene.remove(piece.mesh);
+      houseDebris.splice(i,1);
     }
   }
 
@@ -3038,7 +3250,7 @@ startGameBtn.onclick=()=>{
   bootScreen.style.display="none";
   queueScreen.style.display="grid";
 
-  const waitMs=20000;
+  const waitMs=5000;
   const began=performance.now();
 
   const queueTimer=setInterval(()=>{
@@ -3083,6 +3295,7 @@ dropInLobby.onclick=()=>{
 
 function restartGame(){
   matchStarted=true;
+  stopTankEngine();
   inTank=false;
   tankCamReady=false;
   tank.position.set(24,terrainHeightAt(24,28),28);
@@ -3114,6 +3327,13 @@ function restartGame(){
   for(const e of [...enemies]) scene.remove(e.group);
   enemies.length=0;
   [[0,-28],[18,-34],[-22,-38],[38,-12],[-42,15],[28,32],[-32,38],[55,-42]].forEach(p=>makeEnemy(...p));
+
+  for(const projectile of enemyProjectiles){
+    scene.remove(projectile.mesh,projectile.trail);
+    projectile.trail.geometry.dispose();
+    projectile.trail.material.dispose();
+  }
+  enemyProjectiles.length=0;
 
   // clear dropped guns
   for(const g of [...dropped]) scene.remove(g.group);
