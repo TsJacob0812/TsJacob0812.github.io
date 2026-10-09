@@ -16,7 +16,6 @@
         <li class="nav-li"><a href="index.html">Home</a></li>
         <li class="nav-li"><a href="portfolio.html">Portfolio</a></li>
         <li class="nav-li"><a href="music.html">Music Taste</a></li>
-        <li class="nav-li"><a href="coding.html">Coding</a></li>
         <li class="nav-li"><a href="gallery.html" aria-current="page">Photo Gallery</a></li>
         <li class="nav-li"><a href="fortnite.html">Fortnite</a></li>
       </ul>
@@ -29,14 +28,11 @@
         <p>𝕋𝕖𝕟 𝕞𝕠𝕞𝕖𝕟𝕥𝕤. 𝕔𝕝𝕠𝕤𝕖 𝕦𝕡.</p>
       </header>
 
-      <audio class="gallery-audio" id="gallery-audio" controls autoplay loop preload="auto"
+      <audio id="gallery-audio" autoplay loop preload="auto"
         aria-label="Gallery soundtrack">
         <source src="audio/Insomniac.mp3" type="audio/mpeg" />
         Your browser does not support audio playback.
       </audio>
-      <p class="gallery-audio-note" id="gallery-audio-note">
-        If playback is blocked, press play above. The soundtrack keeps playing while you view photos.
-      </p>
 
       <section class="gallery-grid" aria-label="Photo gallery">
         <button class="gallery-item" type="button" data-src="assets/IMG_6581.JPG" data-alt="Gallery photo 1">
@@ -86,7 +82,11 @@
   <div class="gallery-lightbox" id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Expanded photo"
     hidden>
     <button class="gallery-close" id="gallery-close" type="button" aria-label="Close photo">&times;</button>
+    <button class="gallery-arrow gallery-arrow-previous" id="gallery-previous" type="button"
+      aria-label="Previous photo">&lsaquo;</button>
     <img class="gallery-lightbox-image" id="gallery-lightbox-image" alt="" />
+    <button class="gallery-arrow gallery-arrow-next" id="gallery-next" type="button"
+      aria-label="Next photo">&rsaquo;</button>
     <p class="gallery-lightbox-caption" id="gallery-lightbox-caption"></p>
   </div>
 

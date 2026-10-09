@@ -25,6 +25,7 @@ const triangleLayer = document.querySelector("#neo-triangle-layer");
 const beatThreshold = 0.58;
 const beatCooldown = 170;
 let lastBeat = 0;
+
 for (let index = 0; index < 48; index += 1) {
   const bar = document.createElement("span");
   bar.className = "music-visualizer-bar";
@@ -80,6 +81,9 @@ function updateVisualizer() {
     );
     triangle.style.setProperty("--beat-warp", bassLevel.toFixed(2));
   }
+
+  const glowLevel = isPlaying ? 0.12 + bassLevel * 0.72 : 0.06;
+  triangleLayer.style.setProperty("--triangle-glow", glowLevel.toFixed(2));
 
   if (isPlaying && bassLevel > beatThreshold && now - lastBeat > beatCooldown) {
     lastBeat = now;

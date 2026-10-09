@@ -2,18 +2,18 @@ const lightbox = document.querySelector("#gallery-lightbox");
 const lightboxImage = document.querySelector("#gallery-lightbox-image");
 const lightboxCaption = document.querySelector("#gallery-lightbox-caption");
 const closeButton = document.querySelector("#gallery-close");
+const previousButton = document.querySelector("#gallery-previous");
+const nextButton = document.querySelector("#gallery-next");
 const galleryAudio = document.querySelector("#gallery-audio");
-const galleryAudioNote = document.querySelector("#gallery-audio-note");
+const galleryItems = [...document.querySelectorAll(".gallery-item")];
 let previouslyFocusedItem = null;
+let currentPhotoIndex = 0;
 
 function startGalleryAudio() {
   const playback = galleryAudio.play();
   if (playback) {
     playback.catch((error) => {
-      galleryAudioNote.textContent =
-        error.name === "NotAllowedError"
-          ? "Press play above to start the gallery soundtrack."
-          : "The gallery soundtrack could not be played. Check the audio file and try again.";
+      console.warn("The gallery soundtrack could not be played.", error);
     });
   }
 }
@@ -25,18 +25,32 @@ function closeLightbox() {
   previouslyFocusedItem?.focus();
 }
 
-for (const item of document.querySelectorAll(".gallery-item")) {
+function showPhoto(index) {
+  currentPhotoIndex = (index + galleryItems.length) % galleryItems.length;
+  const item = galleryItems[currentPhotoIndex];
+  lightboxImage.src = item.dataset.src;
+  lightboxImage.alt = item.dataset.alt;
+  lightboxCaption.textContent = item.dataset.alt;
+}
+
+function showPreviousPhoto() {
+  showPhoto(currentPhotoIndex - 1);
+}
+
+function showNextPhoto() {
+  showPhoto(currentPhotoIndex + 1);
+}
+
+galleryItems.forEach((item, index) => {
   item.addEventListener("click", () => {
     startGalleryAudio();
     previouslyFocusedItem = item;
-    lightboxImage.src = item.dataset.src;
-    lightboxImage.alt = item.dataset.alt;
-    lightboxCaption.textContent = item.dataset.alt;
+    showPhoto(index);
     lightbox.hidden = false;
     document.body.classList.add("gallery-modal-open");
     closeButton.focus();
   });
-}
+});
 
 window.addEventListener("pagehide", () => {
   galleryAudio.pause();
@@ -50,9 +64,19 @@ lightbox.addEventListener("click", (event) => {
 });
 
 closeButton.addEventListener("click", closeLightbox);
+previousButton.addEventListener("click", showPreviousPhoto);
+nextButton.addEventListener("click", showNextPhoto);
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !lightbox.hidden) {
+  if (lightbox.hidden) {
+    return;
+  }
+
+  if (event.key === "Escape") {
     closeLightbox();
+  } else if (event.key === "ArrowLeft") {
+    showPreviousPhoto();
+  } else if (event.key === "ArrowRight") {
+    showNextPhoto();
   }
 });

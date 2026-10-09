@@ -513,11 +513,25 @@ nav > #nav-ul {
   position: fixed;
   inset: 0;
   pointer-events: none;
-}
-
-.neo-triangle-layer {
   z-index: 1;
   overflow: hidden;
+}
+
+.neo-triangle-layer::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: clamp(180px, 30vw, 440px);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(100, 17, 38, 0.2) 45%,
+    rgba(255, 24, 61, 0.38)
+  );
+  content: "";
+  opacity: var(--triangle-glow, 0.06);
+  transition: opacity 100ms ease-out;
 }
 
 .neo-triangle {
@@ -937,7 +951,7 @@ main {
 h2 {
   margin: 0;
   font-size: clamp(4rem, 10vw, 7rem);
-  line-height: 0.9;
+  line-height: 1.2;
   font-weight: 900;
   letter-spacing: -0.04em;
   text-transform: uppercase;
@@ -3029,7 +3043,8 @@ nav h1 {
 }
 
 .gallery-item:focus-visible,
-.gallery-close:focus-visible {
+.gallery-close:focus-visible,
+.gallery-arrow:focus-visible {
   outline: 2px solid #ff8292;
   outline-offset: 3px;
 }
@@ -3071,6 +3086,35 @@ nav h1 {
   cursor: pointer;
 }
 
+.gallery-arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 48px;
+  height: 58px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(20, 12, 18, 0.65);
+  color: #fff;
+  font-size: 2.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gallery-arrow:hover {
+  background: rgba(215, 25, 63, 0.75);
+}
+
+.gallery-arrow-previous {
+  left: 22px;
+}
+
+.gallery-arrow-next {
+  right: 22px;
+}
+
 .gallery-lightbox-caption {
   position: absolute;
   bottom: 20px;
@@ -3099,6 +3143,14 @@ nav h1 {
   .gallery-lightbox {
     padding-right: 12px;
     padding-left: 12px;
+  }
+
+  .gallery-arrow-previous {
+    left: 8px;
+  }
+
+  .gallery-arrow-next {
+    right: 8px;
   }
 }
 
