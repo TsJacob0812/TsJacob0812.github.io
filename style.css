@@ -961,6 +961,7 @@ h2 {
 .name-word {
   display: inline-block;
   color: transparent;
+  -webkit-text-stroke: 1px #000;
   background-size: 240% 100%;
   background-position: 200% 0;
   background-clip: text;
