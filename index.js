@@ -1,27 +1,38 @@
+const djIntro = document.querySelector("#dj-intro");
 const soundtrack = document.querySelector("#soundtrack");
 const toggleButton = document.querySelector("#soundtrack-toggle");
 const muteButton = document.querySelector("#soundtrack-mute");
 const volumeControl = document.querySelector("#soundtrack-volume");
 
 const clinkTime = 1300;
-const clinkDuration = 800;
-const soundtrackStartTime = 1;
-const fadeDelay = clinkTime + clinkDuration;
-const fadeDuration = 2500;
-const bassBoost = 6;
-const visualizerSensitivity = 1.35;
+const soundtrackStartTime = 1.50;
+const djIntroDuration = 650;
+const djDelayAfterDing = 1500;
+const crossfadeDuration = 250;
+const djIntroStartsAt = performance.now() + clinkTime + djDelayAfterDing;
+const bassBoost = 7;
+const visualizerSensitivity = 0.90;
 const visualizerBassBoost = 1.35;
 const visualizerMaxHeight = 0.68;
 
 let soundtrackContext = null;
 let bassFilter = null;
 let analyser = null;
+let soundtrackGain = null;
+let djAnalyser = null;
+let djGain = null;
 let visualizerFrame = null;
+let djBassFrame = null;
 let hasStartedSoundtrack = false;
 let hasPlayedDing = false;
+let hasPlayedDJIntro = false;
+let djIntroPromise = null;
+let isDJBassHit = false;
+let isSoundtrackBassHit = false;
 
 const visualizer = document.querySelector("#music-visualizer");
 const triangleLayer = document.querySelector("#neo-triangle-layer");
+const clink = document.querySelector(".wine-clink");
 const beatThreshold = 0.58;
 const beatCooldown = 170;
 let lastBeat = 0;
@@ -36,28 +47,105 @@ for (let index = 0; index < 48; index += 1) {
 
 soundtrack.volume = Number(volumeControl.value);
 
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return null;
+  }
+  soundtrackContext ??= new AudioContextClass();
+  return soundtrackContext;
+}
+
 function setupBassBoost() {
-  if (
-    soundtrackContext ||
-    (!window.AudioContext && !window.webkitAudioContext)
-  ) {
+  if (bassFilter) {
     return;
   }
 
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  soundtrackContext = new AudioContextClass();
+  const audioContext = getAudioContext();
+  if (!audioContext) {
+    return;
+  }
+
   const soundtrackSource =
-    soundtrackContext.createMediaElementSource(soundtrack);
-  bassFilter = soundtrackContext.createBiquadFilter();
+    audioContext.createMediaElementSource(soundtrack);
+  bassFilter = audioContext.createBiquadFilter();
   bassFilter.type = "lowshelf";
   bassFilter.frequency.value = 180;
   bassFilter.gain.value = bassBoost;
   soundtrackSource.connect(bassFilter);
-  analyser = soundtrackContext.createAnalyser();
+  analyser = audioContext.createAnalyser();
   analyser.fftSize = 128;
   analyser.smoothingTimeConstant = 0.65;
   bassFilter.connect(analyser);
-  analyser.connect(soundtrackContext.destination);
+  soundtrackGain = audioContext.createGain();
+  analyser.connect(soundtrackGain);
+  soundtrackGain.connect(audioContext.destination);
+}
+
+function setupDJAnalyser() {
+  if (djAnalyser) {
+    return;
+  }
+
+  const audioContext = getAudioContext();
+  if (!audioContext) {
+    return;
+  }
+
+  const djSource = audioContext.createMediaElementSource(djIntro);
+  djGain = audioContext.createGain();
+  djAnalyser = audioContext.createAnalyser();
+  djAnalyser.fftSize = 1024;
+  djAnalyser.smoothingTimeConstant = 0.25;
+  djSource.connect(djGain);
+  djGain.connect(djAnalyser);
+  djAnalyser.connect(audioContext.destination);
+}
+
+function setClinkBassHit(source, isHit) {
+  if (source === "dj") {
+    isDJBassHit = isHit;
+  } else {
+    isSoundtrackBassHit = isHit;
+  }
+
+  clink.classList.toggle(
+    "is-bass-hit",
+    isDJBassHit || isSoundtrackBassHit,
+  );
+}
+
+function updateClinkFromDJBass() {
+  if (!djAnalyser || djIntro.paused) {
+    setClinkBassHit("dj", false);
+    djBassFrame = null;
+    return;
+  }
+
+  const frequencyData = new Uint8Array(djAnalyser.frequencyBinCount);
+  djAnalyser.getByteFrequencyData(frequencyData);
+  const binWidth = soundtrackContext.sampleRate / djAnalyser.fftSize;
+  const bassBinCount = Math.ceil(220 / binWidth);
+  const bassLevel =
+    frequencyData
+      .slice(1, bassBinCount + 1)
+      .reduce((total, value) => total + value, 0) /
+    (bassBinCount * 255);
+  if (!isDJBassHit && bassLevel >= 0.2) {
+    setClinkBassHit("dj", true);
+  } else if (isDJBassHit && bassLevel < 0.12) {
+    setClinkBassHit("dj", false);
+  }
+
+  djBassFrame = requestAnimationFrame(updateClinkFromDJBass);
+}
+
+function stopDJBassMonitor() {
+  if (djBassFrame) {
+    cancelAnimationFrame(djBassFrame);
+    djBassFrame = null;
+  }
+  setClinkBassHit("dj", false);
 }
 
 function updateVisualizer() {
@@ -74,6 +162,14 @@ function updateVisualizer() {
   const bassLevel =
     frequencyData.slice(0, 8).reduce((total, value) => total + value, 0) /
     (8 * 255);
+  if (!isSoundtrackBassHit && isPlaying && bassLevel >= 0.2) {
+    setClinkBassHit("soundtrack", true);
+  } else if (
+    isSoundtrackBassHit &&
+    (!isPlaying || bassLevel < 0.12)
+  ) {
+    setClinkBassHit("soundtrack", false);
+  }
   for (const triangle of triangleLayer.children) {
     triangle.style.setProperty(
       "--beat-pulse",
@@ -148,29 +244,7 @@ function spawnNeoTriangles(bassLevel) {
   }
 }
 
-function fadeInSoundtrack() {
-  const targetVolume = Number(volumeControl.value);
-  soundtrack.volume = 0;
-
-  window.setTimeout(() => {
-    if (soundtrack.paused) {
-      return;
-    }
-
-    const fadeStart = performance.now();
-    function updateVolume(now) {
-      const progress = Math.min((now - fadeStart) / fadeDuration, 1);
-      soundtrack.volume = targetVolume * progress;
-      if (progress < 1 && !soundtrack.paused) {
-        requestAnimationFrame(updateVolume);
-      }
-    }
-
-    requestAnimationFrame(updateVolume);
-  }, fadeDelay);
-}
-
-function startSoundtrack() {
+function startMainSoundtrack({ crossfade = false } = {}) {
   setupBassBoost();
   if (!visualizerFrame) {
     updateVisualizer();
@@ -179,7 +253,13 @@ function startSoundtrack() {
     soundtrack.currentTime = soundtrackStartTime;
     hasStartedSoundtrack = true;
   }
-  soundtrack.volume = 0;
+  soundtrack.volume = Number(volumeControl.value);
+  const useCrossfade = crossfade && soundtrackGain && djGain;
+  if (soundtrackGain) {
+    const now = soundtrackContext.currentTime;
+    soundtrackGain.gain.cancelScheduledValues(now);
+    soundtrackGain.gain.setValueAtTime(useCrossfade ? 0 : 1, now);
+  }
   return soundtrack
     .play()
     .then(() => {
@@ -187,9 +267,105 @@ function startSoundtrack() {
         return;
       }
 
-      return soundtrackContext.resume().catch(() => {});
+      return soundtrackContext.resume().then(() => {
+        if (!useCrossfade) {
+          return;
+        }
+
+        const now = soundtrackContext.currentTime;
+        soundtrackGain.gain.setValueAtTime(0, now);
+        soundtrackGain.gain.linearRampToValueAtTime(
+          1,
+          now + crossfadeDuration / 1000,
+        );
+        djGain.gain.setValueAtTime(1, now);
+        djGain.gain.linearRampToValueAtTime(
+          0,
+          now + crossfadeDuration / 1000,
+        );
+      });
+    });
+}
+
+function playDJIntroAndCrossfade() {
+  setupDJAnalyser();
+  djIntro.currentTime = 0;
+  djIntro.volume = 0.5;
+  return Promise.resolve(
+    soundtrackContext?.state === "suspended"
+      ? soundtrackContext.resume()
+      : undefined,
+  )
+    .then(() => djIntro.play())
+    .then(
+      () =>
+        new Promise((resolve, reject) => {
+          let crossfadeTimer;
+          let stopTimer;
+          let crossfadePromise;
+          let finished = false;
+
+          const cleanup = () => {
+            window.clearTimeout(crossfadeTimer);
+            window.clearTimeout(stopTimer);
+            djIntro.removeEventListener("ended", finish);
+            stopDJBassMonitor();
+            djIntro.pause();
+          };
+          const finish = () => {
+            if (finished) {
+              return;
+            }
+            finished = true;
+            cleanup();
+            if (crossfadePromise) {
+              crossfadePromise.then(resolve, reject);
+            } else {
+              startMainSoundtrack().then(resolve, reject);
+            }
+          };
+          const startCrossfade = () => {
+            crossfadePromise = startMainSoundtrack({ crossfade: true });
+            crossfadePromise.catch((error) => {
+              if (!finished) {
+                finished = true;
+                cleanup();
+                reject(error);
+              }
+            });
+          };
+
+          djIntro.addEventListener("ended", finish, { once: true });
+          updateClinkFromDJBass();
+          crossfadeTimer = window.setTimeout(
+            startCrossfade,
+            djIntroDuration - crossfadeDuration,
+          );
+          stopTimer = window.setTimeout(finish, djIntroDuration);
+        }),
+    );
+}
+
+function startSoundtrack() {
+  if (hasPlayedDJIntro) {
+    return startMainSoundtrack();
+  }
+  if (djIntroPromise) {
+    return djIntroPromise;
+  }
+
+  const waitForDJSchedule = Math.max(0, djIntroStartsAt - performance.now());
+  djIntroPromise = new Promise((resolve) => {
+    window.setTimeout(resolve, waitForDJSchedule);
+  })
+    .then(playDJIntroAndCrossfade)
+    .then(() => {
+      hasPlayedDJIntro = true;
     })
-    .then(fadeInSoundtrack);
+    .finally(() => {
+      djIntroPromise = null;
+    });
+  return djIntroPromise;
 }
 
 function playDing() {
@@ -197,12 +373,11 @@ function playDing() {
     return Promise.resolve();
   }
 
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) {
+  const audioContext = getAudioContext();
+  if (!audioContext) {
     return Promise.resolve();
   }
 
-  const audioContext = soundtrackContext || new AudioContextClass();
   const resumeAudio =
     audioContext.state === "suspended"
       ? audioContext.resume()
@@ -234,7 +409,7 @@ function playDing() {
 }
 
 function updateToggleButton() {
-  const isPlaying = !soundtrack.paused;
+  const isPlaying = !soundtrack.paused || !djIntro.paused;
   toggleButton.textContent = isPlaying ? "Pause" : "Play";
   toggleButton.setAttribute(
     "aria-label",
@@ -250,13 +425,16 @@ function updateMuteButton() {
   );
 }
 
-startSoundtrack()
-  .then(() => {
-    window.setTimeout(playDing, clinkTime);
-  })
-  .catch(updateToggleButton);
+window.setTimeout(() => {
+  playDing().catch(updateToggleButton);
+}, clinkTime);
+window.setTimeout(() => {
+  startSoundtrack().catch(updateToggleButton);
+}, clinkTime + djDelayAfterDing);
 soundtrack.addEventListener("play", updateToggleButton);
 soundtrack.addEventListener("pause", updateToggleButton);
+djIntro.addEventListener("play", updateToggleButton);
+djIntro.addEventListener("pause", updateToggleButton);
 
 document.addEventListener("click", (event) => {
   if (event.target.closest(".soundtrack-widget")) {
@@ -273,7 +451,7 @@ document.addEventListener("click", (event) => {
 });
 
 toggleButton.addEventListener("click", () => {
-  if (soundtrack.paused) {
+  if (soundtrack.paused && djIntro.paused) {
     startSoundtrack()
       .then(() => {
         playDing();
@@ -281,6 +459,7 @@ toggleButton.addEventListener("click", () => {
       .catch(updateToggleButton);
   } else {
     soundtrack.pause();
+    djIntro.pause();
   }
 });
 

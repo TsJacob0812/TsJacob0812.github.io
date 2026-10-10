@@ -10,7 +10,7 @@
   place-items: center;
   overflow: hidden;
   background: #000;
-  animation: intro-fade 2.5s ease 2.35s forwards;
+  animation: intro-fade 2.5s ease 4.35s forwards;
 }
 
 .wine-scene {
@@ -209,6 +209,11 @@
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.5);
   animation: clink 0.55s ease 1.3s forwards;
+}
+
+.wine-clink.is-bass-hit {
+  color: #fff;
+  text-shadow: 0 0 14px #fff, 0 0 30px rgba(255, 255, 255, 0.9);
 }
 
 .wine-burst {

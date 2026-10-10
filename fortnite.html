@@ -311,8 +311,8 @@ button:hover{background:#e32448}
 <div id="lobbyScreen">
   <div class="lobby-glow"></div>
   <div class="lobby-copy">
-    <h1>ARMORED ROYALE</h1>
-    <p>Lobby ready. Choose when to deploy.</p>
+    <h1>ꜰᴏʀᴛɴɪᴛᴇ</h1>
+    <p>​🇱​​🇴​​🇧​​🇧​​🇾​ ​🇷​​🇪​​🇦​​🇩​​🇾​, ​🇨​​🇭​​🇴​​🇴​​🇸​​🇪​ ​🇼​​🇭​​🇪​​🇳​ ​🇹​​🇴​ ​🇩​​🇪​​🇵​​🇱​​🇴​​🇾</p>
   </div>
   <div class="lobby-tank">
     <div class="lt-track left"></div>
@@ -321,8 +321,8 @@ button:hover{background:#e32448}
     <div class="lt-turret"></div>
     <div class="lt-barrel"></div>
   </div>
-  <div class="lobby-tip">5 weapon slots • drivable tank • explosive weapons • hilltop loot</div>
-  <button id="dropInLobby">DROP IN</button>
+  <div class="lobby-tip">Passwords ar like toothbrushes, DONT SHARE EM!!</div>
+  <button id="dropInLobby">READY UP</button>
 </div>
 
 <div id="dropLoadScreen">
@@ -2090,40 +2090,75 @@ function startTankEngine(){
   if(tankEngine)return;
   ensureAudio();
   const modes={
-    idle:{frequency:48,type:"sawtooth",level:.075},
-    moving:{frequency:62,type:"sawtooth",level:.12},
-    reverse:{frequency:74,type:"triangle",level:.105}
+    idle:{frequency:32,level:.06,cutoff:190,rattle:.18},
+    moving:{frequency:40,level:.096,cutoff:245,rattle:.24},
+    reverse:{frequency:35,level:.084,cutoff:215,rattle:.21}
   };
   const gains={};
+  const filters={};
   const oscillators=[];
+  const sources=[];
+  const clatterBuffer=audioCtx.createBuffer(
+    1,
+    Math.floor(audioCtx.sampleRate*.8),
+    audioCtx.sampleRate
+  );
+  const clatterSamples=clatterBuffer.getChannelData(0);
+  for(let i=0;i<clatterSamples.length;i++){
+    clatterSamples[i]=Math.random()*2-1;
+  }
   for(const [mode,settings] of Object.entries(modes)){
     const gain=audioCtx.createGain();
     gain.gain.value=mode==="idle"?settings.level:0;
     routeSound(gain);
-    for(const harmonic of [1,2.03]){
+    const filter=audioCtx.createBiquadFilter();
+    filter.type="lowpass";
+    filter.frequency.value=settings.cutoff;
+    filter.Q.value=.7;
+    filter.connect(gain);
+    filters[mode]=filter;
+    for(const [index,harmonic] of [1,2,3,4].entries()){
       const oscillator=audioCtx.createOscillator();
-      oscillator.type=settings.type;
+      oscillator.type="sawtooth";
       oscillator.frequency.value=settings.frequency*harmonic;
       const voice=audioCtx.createGain();
-      voice.gain.value=harmonic===1?1:.28;
+      voice.gain.value=[.85,.25,.1,.04][index];
       oscillator.connect(voice);
-      voice.connect(gain);
+      voice.connect(filter);
       oscillator.start();
       oscillators.push({oscillator,mode,harmonic,baseFrequency:settings.frequency*harmonic});
+      sources.push(oscillator);
     }
+    const clatterFilter=audioCtx.createBiquadFilter();
+    clatterFilter.type="bandpass";
+    clatterFilter.frequency.value=420;
+    clatterFilter.Q.value=.65;
+    const clatterGain=audioCtx.createGain();
+    clatterGain.gain.value=settings.rattle;
+    const clatter=audioCtx.createBufferSource();
+    clatter.buffer=clatterBuffer;
+    clatter.loop=true;
+    clatter.connect(clatterFilter);
+    clatterFilter.connect(clatterGain);
+    clatterGain.connect(gain);
+    clatter.start();
+    sources.push(clatter);
     gains[mode]=gain;
   }
-  tankEngine={gains,oscillators};
+  tankEngine={gains,filters,oscillators,sources};
 }
 function updateTankEngine(drive){
   if(!tankEngine)return;
   const mode=drive<0?"reverse":drive>0?"moving":"idle";
   const now=audioCtx.currentTime;
+  const levels={idle:.06,moving:.096,reverse:.084};
+  const cutoffs={idle:190,moving:245,reverse:215};
   for(const [name,gain] of Object.entries(tankEngine.gains)){
-    const level=name===mode?{idle:.075,moving:.12,reverse:.105}[name]:0;
+    const level=name===mode?levels[name]:0;
     gain.gain.setTargetAtTime(level,now,.14);
+    tankEngine.filters[name].frequency.setTargetAtTime(cutoffs[name],now,.18);
   }
-  const rpm=1+Math.abs(drive)*.16;
+  const rpm=1+Math.abs(drive)*.22;
   for(const voice of tankEngine.oscillators){
     voice.oscillator.frequency.setTargetAtTime(voice.baseFrequency*rpm,now,.18);
   }
@@ -2137,7 +2172,7 @@ function stopTankEngine(){
     gain.gain.cancelScheduledValues(now);
     gain.gain.setTargetAtTime(0,now,.06);
   }
-  for(const {oscillator} of engine.oscillators)oscillator.stop(now+.35);
+  for(const source of engine.sources)source.stop(now+.35);
 }
 function victoryFanfare(){
   ensureAudio();
