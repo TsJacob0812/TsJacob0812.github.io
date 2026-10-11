@@ -1468,6 +1468,8 @@ nav h1 {
 }
 
 .music-page::before {
+  filter: brightness(var(--music-background-brightness, 1));
+  transition: filter 90ms ease-out;
   background:
     linear-gradient(
       135deg,

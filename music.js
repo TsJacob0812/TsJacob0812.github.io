@@ -49,6 +49,15 @@ function updateVisualizer() {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(frequencyData);
   const bars = visualizer.children;
+  const bassLevel =
+    frequencyData
+      .slice(1, 9)
+      .reduce((total, level) => total + level, 0) /
+    (8 * 255);
+  document.body.style.setProperty(
+    "--music-background-brightness",
+    (1 + bassLevel * 0.65).toFixed(2),
+  );
 
   for (let index = 0; index < bars.length; index += 1) {
     const frequencyIndex = Math.floor(
