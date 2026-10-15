@@ -17,10 +17,10 @@ const excludedTracks = [
 ];
 
 const trackCatalog = [
+  { file: "audio/Sleepy Hallow - 2055 (Official Video) 4.mp3", title: "Sleepy Hallow - 2055" },
   { file: "audio/Animal_Company_OST_Tech_Tree_2.mp3", title: "Animal Company OST - Tech Tree 2" },
   { file: "audio/Army Of Lovers - Crucified (Lyrics) 4.mp3", title: "Army of Lovers - Crucified (Lyrics)" },
   { file: "audio/Asleep In Space 4.mp3", title: "Asleep in Space" },
-  { file: "audio/Digging_Animal_Company.mp3", title: "Digging - Animal Company" },
   { file: "audio/Insomniac.mp3", title: "Insomniac" },
   { file: "audio/Lil Peep & Lil Tracy - castles (Official Audio) 4.mp3", title: "Lil Peep & Lil Tracy - Castles" },
   { file: "audio/Playboi_Carti_Sky.mp3", title: "Playboi Carti - Sky" },
