@@ -23,6 +23,10 @@ let djAnalyser = null;
 let djGain = null;
 let visualizerFrame = null;
 let djBassFrame = null;
+let clinkFlashTimer = null;
+let djIntroFlashSequenceTimer = null;
+let isDJIntroFlashSequence = false;
+let djIntroFlashCount = 0;
 let hasStartedSoundtrack = false;
 let hasPlayedDing = false;
 let hasPlayedDJIntro = false;
@@ -75,7 +79,7 @@ function setupBassBoost() {
   soundtrackSource.connect(bassFilter);
   analyser = audioContext.createAnalyser();
   analyser.fftSize = 128;
-  analyser.smoothingTimeConstant = 0.65;
+  analyser.smoothingTimeConstant = 0.15;
   bassFilter.connect(analyser);
   soundtrackGain = audioContext.createGain();
   analyser.connect(soundtrackGain);
@@ -96,7 +100,7 @@ function setupDJAnalyser() {
   djGain = audioContext.createGain();
   djAnalyser = audioContext.createAnalyser();
   djAnalyser.fftSize = 1024;
-  djAnalyser.smoothingTimeConstant = 0.25;
+  djAnalyser.smoothingTimeConstant = 0.15;
   djSource.connect(djGain);
   djGain.connect(djAnalyser);
   djAnalyser.connect(audioContext.destination);
@@ -109,10 +113,23 @@ function setClinkBassHit(source, isHit) {
     isSoundtrackBassHit = isHit;
   }
 
-  clink.classList.toggle(
-    "is-bass-hit",
-    isDJBassHit || isSoundtrackBassHit,
-  );
+  if (!isHit) {
+    return;
+  }
+
+  if (isDJIntroFlashSequence) {
+    if (djIntroFlashCount >= 2) {
+      return;
+    }
+    djIntroFlashCount += 1;
+  }
+
+  clink.classList.add("is-bass-hit");
+  window.clearTimeout(clinkFlashTimer);
+  clinkFlashTimer = window.setTimeout(() => {
+    clink.classList.remove("is-bass-hit");
+    clinkFlashTimer = null;
+  }, 140);
 }
 
 function updateClinkFromDJBass() {
@@ -133,7 +150,7 @@ function updateClinkFromDJBass() {
     (bassBinCount * 255);
   if (!isDJBassHit && bassLevel >= 0.2) {
     setClinkBassHit("dj", true);
-  } else if (isDJBassHit && bassLevel < 0.12) {
+  } else if (isDJBassHit && bassLevel < 0.18) {
     setClinkBassHit("dj", false);
   }
 
@@ -166,7 +183,7 @@ function updateVisualizer() {
     setClinkBassHit("soundtrack", true);
   } else if (
     isSoundtrackBassHit &&
-    (!isPlaying || bassLevel < 0.12)
+    (!isPlaying || bassLevel < 0.18)
   ) {
     setClinkBassHit("soundtrack", false);
   }
@@ -188,8 +205,14 @@ function updateVisualizer() {
 
   for (let index = 0; index < bars.length; index += 1) {
     const distanceFromCenter = Math.abs(index - midpoint) / midpoint;
-    const frequencyIndex = Math.floor(
+    const baseFrequencyIndex = Math.floor(
       (index / (bars.length - 1)) * (frequencyData.length - 1),
+    );
+    const frequencyIndex = Math.min(
+      frequencyData.length - 1,
+      index >= bars.length - 15
+        ? Math.round(baseFrequencyIndex * 1.1)
+        : baseFrequencyIndex,
     );
     const frequencyPosition = frequencyIndex / (frequencyData.length - 1);
     const bassFactor = 1 + (1 - frequencyPosition) * (visualizerBassBoost - 1);
@@ -310,6 +333,11 @@ function playDJIntroAndCrossfade() {
             window.clearTimeout(stopTimer);
             djIntro.removeEventListener("ended", finish);
             stopDJBassMonitor();
+            window.clearTimeout(djIntroFlashSequenceTimer);
+            djIntroFlashSequenceTimer = window.setTimeout(() => {
+              isDJIntroFlashSequence = false;
+              djIntroFlashSequenceTimer = null;
+            }, 500);
             djIntro.pause();
           };
           const finish = () => {
@@ -336,6 +364,9 @@ function playDJIntroAndCrossfade() {
           };
 
           djIntro.addEventListener("ended", finish, { once: true });
+          window.clearTimeout(djIntroFlashSequenceTimer);
+          djIntroFlashCount = 0;
+          isDJIntroFlashSequence = true;
           updateClinkFromDJBass();
           crossfadeTimer = window.setTimeout(
             startCrossfade,
