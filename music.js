@@ -18,7 +18,7 @@ const excludedTracks = [
 
 const trackCatalog = [
   { file: "audio/Sleepy Hallow - 2055 (Official Video) 4.mp3", title: "Sleepy Hallow - 2055" },
-  { file: "audio/Animal_Company_OST_Tech_Tree_2.mp3", title: "Animal Company OST - Tech Tree 2" },
+  { file: "audio/Nino Paid - Lunch Break Freestyle [CLEAN].mp3", title: "Nino Paid - Lunch Break Freestyle" },
   { file: "audio/Army Of Lovers - Crucified (Lyrics) 4.mp3", title: "Army of Lovers - Crucified (Lyrics)" },
   { file: "audio/Asleep In Space 4.mp3", title: "Asleep in Space" },
   { file: "audio/Insomniac.mp3", title: "Insomniac" },
