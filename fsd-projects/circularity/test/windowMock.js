@@ -11,23 +11,68 @@ const view = {
     },
     children: []
 }
+const godSpeedButton = {
+    addEventListener: function(event, handler) {
+        this.clickHandler = handler;
+    }
+};
 
 const windowMock = {
+    document: {
+        getElementById: function(id) {
+            return id === "godSpeedBtn" ? godSpeedButton : null;
+        }
+    },
+    godSpeedButton: godSpeedButton,
     getCircleID: function() {
         return circleID;
     },
     setCircleID: function(x) {
         circleID = x;
     },
+    createjs: {
+        Shape: function() {
+            this.graphics = {
+                clear: function() { return this; },
+                setStrokeStyle: function(width) {
+                    this.strokeWidth = width;
+                    return this;
+                },
+                beginStroke: function(color) {
+                    this.stroke = color;
+                    return this;
+                },
+                moveTo: function() { return this; },
+                lineTo: function() { return this; }
+            };
+        },
+        Shadow: function(color, offsetX, offsetY, blur) {
+            this.color = color;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
+            this.blur = blur;
+        }
+    },
     opspark: {
         draw: {
+            randomRadialProps: function(area) {
+                return {
+                    radius: 10,
+                    color: "#999",
+                    x: 0,
+                    y: 0
+                };
+            },
             randomCircleInArea: function(area, randomizeAlpha, addCross, borderColor, borderThickness) {
                 return {
                     name: "circle",
                     id: circleID++,
                     x: 0,
                     y: 0,
-                    radius: 10
+                    radius: 10,
+                    on: function(event, handler) {
+                        this.clickHandler = handler;
+                    }
                 }
             },
             fps: function() {return {}}
@@ -35,11 +80,12 @@ const windowMock = {
         racket: {
             physikz: {
                 addRandomVelocity: function(circle, canvas) {
-                    circle.velocity = 1;
+                    circle.velocityX = 1;
+                    circle.velocityY = 1;
                 }, 
                 updatePosition: function(circle) {
-                    circle.x += circle.velocity;
-                    circle.y += circle.velocity;
+                    circle.x += circle.velocityX;
+                    circle.y += circle.velocityY;
                 }
             }
         }, 

@@ -25,6 +25,7 @@ var Gamification = (function () {
   var countdownInProgress = false; // Prevent multiple countdowns
   var gameStartTime = null; // Track when the game actually starts
   var INVINCIBILITY_DURATION = 5000; // 5 seconds in milliseconds
+  var CIRCLE_COLORS = ["#FF1744", "#F44336", "#D50000", "#FF5252", "#B71C1C", "#FF8A80"];
 
   // Consistent start positions for players
   var PLAYER_START_POSITIONS = {
@@ -87,6 +88,8 @@ var Gamification = (function () {
         if (Multiplayer.isMultiplayer) {
           updatePlayer2();
         }
+        if (player1 && player1.updateTrail) player1.updateTrail();
+        if (player2 && player2.updateTrail) player2.updateTrail();
         handleAbsorption();
         updatePlayerTooltips();
         updateInvincibilityVisuals();
@@ -109,9 +112,11 @@ var Gamification = (function () {
     });
   }
 
-  // Create player 1 (always green, uses WASD)
+  // Create player 1 in a bright red shade, using WASD
   function createPlayer1() {
-    player1 = draw.randomCircleInArea(canvas, true, true, "#00FF00", 3);
+    var player1Props = draw.randomRadialProps(canvas);
+    player1Props.color = "#FF1744";
+    player1 = draw.randomCircleInArea(canvas, false, false, "#FF1744", 3, player1Props);
     player1.radius = 15;
     player1.scaleX = player1.scaleY = 1.5;
 
@@ -130,10 +135,11 @@ var Gamification = (function () {
     player1.velocityX = 0;
     player1.velocityY = 0;
 
+    game.addCircleTrail(player1, "#FF1744");
     view.addChild(player1);
 
     // Add tooltip to identify player 1
-    addPlayerTooltip(player1, "P1", "#00FF00");
+    addPlayerTooltip(player1, "P1", "#FF1744");
 
     // Add temporary pointer
     addTemporaryPointer(player1);
@@ -143,10 +149,11 @@ var Gamification = (function () {
     updateScore();
   }
 
-  // Create player 2 (always blue, uses arrow keys)
+  // Create player 2 in a darker red shade, using arrow keys
   function createPlayer2() {
-    // Create player2 using the same method as player1 but with blue color
-    player2 = draw.randomCircleInArea(canvas, true, true, "#0080FF", 3);
+    var player2Props = draw.randomRadialProps(canvas);
+    player2Props.color = "#B71C1C";
+    player2 = draw.randomCircleInArea(canvas, false, false, "#B71C1C", 3, player2Props);
     player2.radius = 15;
     player2.scaleX = player2.scaleY = 1.5;
 
@@ -166,10 +173,11 @@ var Gamification = (function () {
     player2.velocityY = 0;
 
     // Add to view
+    game.addCircleTrail(player2, "#B71C1C");
     view.addChild(player2);
 
     // Add tooltip to identify player 2
-    addPlayerTooltip(player2, "P2", "#0080FF");
+    addPlayerTooltip(player2, "P2", "#B71C1C");
 
     // Reset score
     player2Score = 0;
@@ -597,8 +605,12 @@ function updatePlayer2() {
       circles.splice(index, 1);
 
       // Create a new circle to maintain population
-      var circle = draw.randomCircleInArea(canvas, true, true, "#999", 2);
+      var color = CIRCLE_COLORS[circles.length % CIRCLE_COLORS.length];
+      var radialProps = draw.randomRadialProps(canvas);
+      radialProps.color = color;
+      var circle = draw.randomCircleInArea(canvas, false, false, color, 2, radialProps);
       physikz.addRandomVelocity(circle, canvas);
+      game.addCircleTrail(circle, color);
       view.addChild(circle);
       circles.push(circle);
     }
@@ -921,7 +933,7 @@ function showCountdown(callback) {
   
   var countdownDiv = document.createElement("div");
   countdownDiv.id = "countdown";
-  countdownDiv.style.cssText = "font-size: 48px; color: #FFD700; text-align: center;";
+  countdownDiv.style.cssText = "font-size: 48px; color: #FF5252; text-align: center;";
 
   if(gameModeDiv) gameModeDiv.style.display = 'none';
   instructions.style.display = 'block';
@@ -954,14 +966,14 @@ function showCountdown(callback) {
     var instructions = document.getElementById("instructions");
     if (instructions) {
       instructions.innerHTML = `
-                  <h2 style="margin: 0 0 10px 0; color: #0080FF;"> Local Multiplayer Ready!</h2>
+                  <h2 style="margin: 0 0 10px 0; color: #B71C1C;"> Local Multiplayer Ready!</h2>
                   <div style="margin: 20px 0;">
-                      <p style="margin: 10px 0; color: #FFD700; font-size: 18px; font-weight: bold;"> Two-Player Mode Activated!</p>
-                      <p style="margin: 5px 0; color: #00FF00; font-size: 16px;"> Player 1: GREEN circle (WASD keys)</p>
-                      <p style="margin: 5px 0; color: #0080FF; font-size: 16px;"> Player 2: BLUE circle (Arrow keys)</p>
+                      <p style="margin: 10px 0; color: #FF5252; font-size: 18px; font-weight: bold;"> Two-Player Mode Activated!</p>
+                      <p style="margin: 5px 0; color: #FF1744; font-size: 16px;"> Player 1: bright red circle (WASD keys)</p>
+                      <p style="margin: 5px 0; color: #B71C1C; font-size: 16px;"> Player 2: dark red circle (Arrow keys)</p>
                       <p style="margin: 5px 0;">Absorb circles and each other to grow!</p>
                       <p style="margin: 5px 0;">Biggest circle after 60 seconds wins!</p>
-                      <p style="margin: 15px 0 5px 0; color: #FFD700;"><strong>Press any key to start!</strong></p>
+                      <p style="margin: 15px 0 5px 0; color: #FF5252;"><strong>Press any key to start!</strong></p>
                   </div>
               `;
 
@@ -982,7 +994,7 @@ function showCountdown(callback) {
     var statusDiv = document.createElement("div");
     statusDiv.id = "multiplayerStatus";
     var roleText = Multiplayer.isHost ? "HOST" : "GUEST";
-    var roleColor = Multiplayer.isHost ? "#00FF00" : "#0080FF";
+    var roleColor = Multiplayer.isHost ? "#FF1744" : "#B71C1C";
 
     statusDiv.style.cssText = `
               position: absolute;
@@ -1002,7 +1014,7 @@ function showCountdown(callback) {
 
     statusDiv.innerHTML = `
               <div style="color: ${roleColor};"> MULTIPLAYER</div>
-              <div style="color: #FFD700; font-size: 12px;">${roleText} • Connected</div>
+              <div style="color: #FF5252; font-size: 12px;">${roleText} • Connected</div>
           `;
 
     // Add to the canvas container

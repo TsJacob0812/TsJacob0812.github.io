@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore the Backrooms, find the distant elevator, and escape."
+    />
+    <title>Backrooms</title>
+    <link rel="stylesheet" href="game.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module" src="game.js"></script>
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="page-header">
+        <a class="back-link" href="../../portfolio.html">← Portfolio</a>
+        <p class="eyebrow">A LIMINAL HORROR GAME</p>
+        <h1>Backrooms</h1>
+        <p class="subtitle">The halls never end. Something is already here.</p>
+      </header>
+
+      <section class="game-frame" aria-label="Backrooms game">
+        <div class="game-hud">
+          <div class="objective">
+            <span class="hud-label">OBJECTIVE</span>
+            <span id="objective-text">Find the elevator and escape</span>
+          </div>
+          <div class="alert-meter" aria-label="Monster proximity">
+            <span class="hud-label">PROXIMITY</span>
+            <span class="meter-track"><span id="presence-fill"></span></span>
+          </div>
+          <button
+            class="fullscreen-button"
+            id="fullscreen-button"
+            type="button"
+            aria-label="Enter fullscreen"
+            aria-pressed="false"
+            title="Fullscreen (F)"
+          >
+            Fullscreen
+          </button>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas
+            id="game"
+            width="800"
+            height="500"
+            role="img"
+            aria-label="First-person 3D view of the Backrooms. Use the mouse to look around, W and S to move, and A and D to strafe."
+          ></canvas>
+
+          <div class="game-overlay" id="game-overlay">
+            <div class="overlay-card">
+              <p class="eyebrow" id="overlay-eyebrow">NO EXIT · UNKNOWN TIME</p>
+              <h2 id="overlay-title">You woke up somewhere wrong.</h2>
+              <p id="overlay-copy">
+                Find the elevator and escape. The footsteps behind you aren't yours.
+                Press Start to enter and enable sound.
+              </p>
+              <button class="primary-button" id="start-button" type="button">Start</button>
+            </div>
+          </div>
+          <p class="game-message" id="game-message" aria-live="polite"></p>
+        </div>
+
+        <div class="game-controls">
+          <p><kbd>W</kbd>/<kbd>S</kbd> move · <kbd>A</kbd>/<kbd>D</kbd> strafe · mouse look up/down/all around</p>
+          <p><kbd>Shift</kbd> sprint — but it makes noise</p>
+          <p>Mouse capture · <kbd>Esc</kbd> releases · <kbd>F</kbd> fullscreen</p>
+          <div class="touch-controls" aria-label="Touch controls">
+            <div class="direction-pad">
+              <button type="button" data-control="w" aria-label="Move up">↑</button>
+              <button type="button" data-control="a" aria-label="Strafe left">←</button>
+              <button type="button" data-control="s" aria-label="Move down">↓</button>
+              <button type="button" data-control="d" aria-label="Strafe right">→</button>
+            </div>
+            <button class="sprint-button" type="button" data-control="shift">Sprint</button>
+          </div>
+        </div>
+      </section>
+
+      <p class="game-note">
+        The elevator is somewhere deep in the maze. Listen for the music as you get closer.
+      </p>
+    </main>
+  </body>
+</html>

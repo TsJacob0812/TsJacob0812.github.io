@@ -39,29 +39,31 @@
             </div>
             
             <div id="multiplayerScore" style="position: absolute; top: 10px; right: 10px; color: white; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); z-index: 10; display: none;">
-                <div style="color: #0080FF;">Opponent: Size 15</div>
-                <div id="gameTimer" style="color: #FFD700; margin-top: 5px;">Time: 60s</div>
+                <div style="color: #B71C1C;">Opponent: Size 15</div>
+                <div id="gameTimer" style="color: #FF5252; margin-top: 5px;">Time: 60s</div>
             </div>
+
+            <button id="godSpeedBtn" class="god-speed-btn" type="button">God speed</button>
             
             <div id="instructions" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-family: Arial, sans-serif; text-align: center; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; z-index: 10; display: none;">
-                <h2 style="margin: 0 0 10px 0; color: #00FF00;">Circularity</h2>
+                <h2 style="margin: 0 0 10px 0; color: #FF1744;">Circularity</h2>
                 <div id="gameMode" style="margin-bottom: 15px;">
                     <button id="singlePlayerBtn" class="game-mode-btn">Single Player</button>
                     <button id="hostGameBtn" class="game-mode-btn">Local Multiplayer</button>
                 </div>
                 <div id="singlePlayerInstructions">
-                    <p style="margin: 5px 0;">🟢 You are the GREEN circle</p>
+                    <p style="margin: 5px 0;">🔴 You are the bright red circle</p>
                     <p style="margin: 5px 0;">Use <strong>WASD</strong> to move</p>
                     <p style="margin: 5px 0;">Absorb smaller circles to grow!</p>
                     <p style="margin: 5px 0;">Avoid larger circles or you'll be absorbed!</p>
-                    <p style="margin: 15px 0 5px 0; color: #FFD700;"><strong>Press any key to start!</strong></p>
+                    <p style="margin: 15px 0 5px 0; color: #FF5252;"><strong>Press any key to start!</strong></p>
                 </div>
                 <div id="multiplayerInstructions" style="display: none;">
-                    <p style="margin: 5px 0;">🟢 Player 1: GREEN circle | 🔵 Player 2: BLUE circle</p>
+                    <p style="margin: 5px 0;">🔴 Player 1: bright red | 🟥 Player 2: dark red</p>
                     <p style="margin: 5px 0;">Player 1 uses <strong>WASD</strong> | Player 2 uses <strong>Arrow Keys</strong></p>
                     <p style="margin: 5px 0;">Absorb circles and each other to grow!</p>
                     <p style="margin: 5px 0;">Biggest circle after 60 seconds wins!</p>
-                    <p style="margin: 15px 0 5px 0; color: #FFD700;"><strong>Press any key to start!</strong></p>
+                    <p style="margin: 15px 0 5px 0; color: #FF5252;"><strong>Press any key to start!</strong></p>
                 </div>
             </div>
         </div>

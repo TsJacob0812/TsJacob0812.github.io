@@ -19,20 +19,20 @@ const excludedTracks = [
 const trackCatalog = [
   { file: "audio/Sleepy Hallow - 2055 (Official Video) 4.mp3", title: "Sleepy Hallow - 2055" },
   { file: "audio/Nino Paid - Lunch Break Freestyle [CLEAN].mp3", title: "Nino Paid - Lunch Break Freestyle" },
-  { file: "audio/Army Of Lovers - Crucified (Lyrics) 4.mp3", title: "Army of Lovers - Crucified (Lyrics)" },
+  { file: "audio/3AM.mp3", title: "3AM" },
   { file: "audio/Asleep In Space 4.mp3", title: "Asleep in Space" },
   { file: "audio/Insomniac.mp3", title: "Insomniac" },
   { file: "audio/Lil Peep & Lil Tracy - castles (Official Audio) 4.mp3", title: "Lil Peep & Lil Tracy - Castles" },
-  { file: "audio/Playboi_Carti_Sky.mp3", title: "Playboi Carti - Sky" },
+  { file: "audio/Bane - Destroy Lonely..mp3", title: "Bane - Destroy Lonely" },
   { file: "audio/Mathiastyner - 2AM (Official Music Video).mp3", title: "Mathiastyner - 2AM" },
   { file: "audio/Rival.mp3", title: "Rival - Nb Bankz" },
   { file: "audio/SEMATARY AND GHOST MOUNTAIN  - WORLD'S A FUCK 4.mp3", title: "World's A #### - Semmetary and GhostMountain" },
   { file: "audio/SHAKE THAT SHIT! (prodbyabnormal x hr) 4.mp3", title: "SHAKE THAT ####!" },
   { file: "audio/Spotify_Free_2026-10-09.mp3", title: "HUNNIDDOLLA" },
-  { file: "audio/WIREFRAME_Animal_Company.mp3", title: "WIREFRAME - Animal Company" },
+  { file: "audio/ENVY (Official Audio) - TREFUEGO.mp3", title: "ENVY - TREFUEGO" },
   { file: "audio/magnolia.mp3", title: "Magnolia" },
-  { file: "audio/space_travel_correct.mp3", title: "Space Travel" },
-  { file: "audio/weight_original_soundtrack.mp3", title: "Weight - Original Soundtrack" },
+  { file: "audio/Pumpfake - Sadfriendd, Towa .mp3", title: "Pumpfake - Sadfriendd, Towa" },
+  { file: "audio/wokeuplikethis_ (Clean Version) - Playboi Carti.mp3", title: "wokeuplikethis* - Playboi Carti" },
 ].filter(({ file }) => !excludedTracks.some((excluded) => file.toLowerCase().endsWith(excluded.toLowerCase())));
 
 let tapeLoaded = false;

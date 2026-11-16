@@ -116,6 +116,54 @@ describe('Circularity', function() {
         });
     });
 
+    describe('circle punch', function() {
+        it('should triple a clicked circle velocity without changing its direction', function() {
+            var clickedCircle = circles[0];
+            var velocityX = clickedCircle.velocityX;
+            var velocityY = clickedCircle.velocityY;
+
+            clickedCircle.clickHandler();
+
+            expect(clickedCircle.velocityX).to.equal(velocityX * 3);
+            expect(clickedCircle.velocityY).to.equal(velocityY * 3);
+        });
+    });
+
+    describe('God speed button', function() {
+        it('should multiply every circle velocity by 10 when clicked', function() {
+            var velocities = circles.map(function(circle) {
+                return { x: circle.velocityX, y: circle.velocityY };
+            });
+
+            window.godSpeedButton.clickHandler();
+
+            circles.forEach(function(circle, index) {
+                expect(circle.velocityX).to.equal(velocities[index].x * 10);
+                expect(circle.velocityY).to.equal(velocities[index].y * 10);
+            });
+        });
+
+        it('should brighten and increase the glow of trails with each click', function() {
+            var trail = view.children[0];
+            var previousBlur = trail.shadow.blur;
+            circles.forEach(function(circle) {
+                circle.updateTrail();
+            });
+            var previousWidth = trail.graphics.strokeWidth;
+            var previousAlpha = parseFloat(trail.graphics.stroke.match(/,([0-9.]+)\)$/)[1]);
+
+            window.godSpeedButton.clickHandler();
+            circles.forEach(function(circle) {
+                circle.updateTrail();
+            });
+
+            var nextAlpha = parseFloat(trail.graphics.stroke.match(/,([0-9.]+)\)$/)[1]);
+            expect(trail.shadow.blur).to.be.greaterThan(previousBlur);
+            expect(trail.graphics.strokeWidth).to.be.greaterThan(previousWidth);
+            expect(nextAlpha).to.be.greaterThan(previousAlpha);
+        });
+    });
+
     describe('TODO 4: should update the position of all 5 circles', function() {
         beforeEach(function() {
             sinon.spy(physikz, "updatePosition");
