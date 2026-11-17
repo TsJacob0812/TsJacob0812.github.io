@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Explore the endless yellow halls, restore the relay lamps, and find the service lift out of the Backrooms."
+      content="Explore the endless yellow halls, switch the levers, and find the service lift out of the Backrooms."
     />
     <title>Backrooms</title>
     <link rel="stylesheet" href="game.css" />
@@ -31,10 +31,10 @@
         <div class="game-hud">
           <div class="objective">
             <span class="hud-label">OBJECTIVE</span>
-            <span id="objective-text">Restore the relay lamps</span>
+            <span id="objective-text">Find and switch the three levers</span>
           </div>
           <div class="relay-counter" aria-live="polite">
-            <span class="hud-label">RELAYS</span>
+            <span class="hud-label">LEVERS</span>
             <span><strong id="relay-count">0</strong> / 3</span>
           </div>
           <div class="alert-meter" aria-label="Presence nearby">
@@ -52,12 +52,13 @@
             aria-label="First-person 3D view of the Backrooms. Use W and S to move, A and D to strafe, and the mouse to look around."
           ></canvas>
 
+          <p class="interaction-prompt" id="interaction-prompt" hidden>Press <kbd>E</kbd> to switch the lever</p>
           <div class="game-overlay" id="game-overlay">
             <div class="overlay-card">
               <p class="eyebrow" id="overlay-eyebrow">YELLOW HALLS · 02:17</p>
               <h2 id="overlay-title">You woke up in the Backrooms.</h2>
               <p id="overlay-copy">
-                Restore all three relay lamps, then reach the service lift.
+                Switch all three levers, then reach the service lift.
                 Keep moving when you hear something nearby.
               </p>
               <button class="primary-button" id="start-button" type="button">Enter the Backrooms</button>
@@ -68,7 +69,7 @@
 
         <div class="game-controls">
           <p><kbd>W</kbd>/<kbd>S</kbd> move · <kbd>A</kbd>/<kbd>D</kbd> strafe · mouse look</p>
-          <p><kbd>Shift</kbd> sprint — but it makes noise</p>
+          <p><kbd>E</kbd> switch lever · <kbd>Shift</kbd> sprint — but it makes noise</p>
           <p><kbd>T</kbd> teleport to the elevator room (dev)</p>
           <div class="touch-controls" aria-label="Touch controls">
             <div class="direction-pad">
@@ -77,13 +78,14 @@
               <button type="button" data-control="s" aria-label="Move down">↓</button>
               <button type="button" data-control="d" aria-label="Move right">→</button>
             </div>
+            <button class="interact-button" type="button" data-action="interact">Use</button>
             <button class="sprint-button" type="button" data-control="shift">Sprint</button>
           </div>
         </div>
       </section>
 
       <p class="game-note">
-        Find the three relay lamps to open the service lift. Developer shortcut: press T to teleport to its room.
+        Find and switch all three levers to open the service lift. Press E near a lever to use it. Developer shortcut: press T to teleport to its room.
       </p>
     </main>
     <div class="ending-blackout" id="ending-blackout" aria-hidden="true"></div>

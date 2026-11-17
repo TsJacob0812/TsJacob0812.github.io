@@ -253,6 +253,25 @@ h1 {
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
+.interaction-prompt {
+  position: absolute;
+  z-index: 1;
+  top: 58px;
+  left: 50%;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(216, 182, 78, 0.48);
+  background: rgba(14, 12, 7, 0.82);
+  color: #f5df9b;
+  font-size: 0.82rem;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.interaction-prompt[hidden] {
+  display: none;
+}
+
 .game-message.visible {
   opacity: 1;
   transform: translate(-50%, 0);
@@ -392,7 +411,8 @@ kbd {
   }
 
   .direction-pad button,
-  .sprint-button {
+  .sprint-button,
+  .interact-button {
     border: 1px solid #6b5c32;
     background: #262112;
     color: var(--text);
@@ -422,7 +442,8 @@ kbd {
     grid-row: 2;
   }
 
-  .sprint-button {
+  .sprint-button,
+  .interact-button {
     min-width: 92px;
     min-height: 48px;
   }
