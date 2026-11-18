@@ -28,7 +28,6 @@ const ROWS = MAP_SIZE;
 const map = Array.from({ length: ROWS }, () => Array(COLS).fill("#"));
 const rooms = [];
 const pillarCells = new Set();
-const obstacleCells = new Set();
 
 function carveRect(x, y, width, height) {
   for (let row = y; row < y + height; row += 1) {
@@ -56,67 +55,104 @@ function mazeRandom() {
   return mazeSeed / 4294967296;
 }
 
-function addRoom(x, y, width, height, margin = 4) {
-  const overlaps = rooms.some(([otherX, otherY, otherWidth, otherHeight]) =>
-    x < otherX + otherWidth + margin &&
-    x + width + margin > otherX &&
-    y < otherY + otherHeight + margin &&
-    y + height + margin > otherY
+function addRoom(index, x, y, width, height) {
+  const overlaps = rooms.some((room) => room &&
+    x < room[0] + room[2] &&
+    x + width > room[0] &&
+    y < room[1] + room[3] &&
+    y + height > room[1]
   );
   if (overlaps) return false;
-  rooms.push([x, y, width, height]);
+  rooms[index] = [x, y, width, height];
   return true;
 }
 
-function carveWindingConnection(start, end) {
-  const distanceX = end.x - start.x;
-  const distanceY = end.y - start.y;
-  const distance = Math.abs(distanceX) + Math.abs(distanceY);
-  const waypointCount = Math.max(2, Math.floor(distance / 7));
-  const waypoints = [start];
+function carveRoomConnection(fromIndex, toIndex) {
+  const [fromX, fromY, fromWidth, fromHeight] = rooms[fromIndex];
+  const [toX, toY, toWidth, toHeight] = rooms[toIndex];
+  const sharedRowsStart = Math.max(fromY, toY);
+  const sharedRowsEnd = Math.min(fromY + fromHeight - 1, toY + toHeight - 1);
+  const sharedColumnsStart = Math.max(fromX, toX);
+  const sharedColumnsEnd = Math.min(fromX + fromWidth - 1, toX + toWidth - 1);
 
-  for (let index = 1; index < waypointCount; index += 1) {
-    const progress = index / waypointCount;
-    const offset = (mazeRandom() - 0.5) * 12;
-    waypoints.push({
-      x: Math.max(2, Math.min(COLS - 3, Math.round(start.x + distanceX * progress - Math.sign(distanceY) * offset))),
-      y: Math.max(2, Math.min(ROWS - 3, Math.round(start.y + distanceY * progress + Math.sign(distanceX) * offset))),
-    });
+  if (fromX + fromWidth <= toX && sharedRowsStart <= sharedRowsEnd) {
+    const doorRow = Math.round((sharedRowsStart + sharedRowsEnd) / 2);
+    carveHorizontal(fromX + fromWidth - 1, toX, doorRow);
+  } else if (toX + toWidth <= fromX && sharedRowsStart <= sharedRowsEnd) {
+    const doorRow = Math.round((sharedRowsStart + sharedRowsEnd) / 2);
+    carveHorizontal(toX + toWidth - 1, fromX, doorRow);
+  } else if (fromY + fromHeight <= toY && sharedColumnsStart <= sharedColumnsEnd) {
+    const doorColumn = Math.round((sharedColumnsStart + sharedColumnsEnd) / 2);
+    carveVertical(doorColumn, fromY + fromHeight - 1, toY);
+  } else if (toY + toHeight <= fromY && sharedColumnsStart <= sharedColumnsEnd) {
+    const doorColumn = Math.round((sharedColumnsStart + sharedColumnsEnd) / 2);
+    carveVertical(doorColumn, toY + toHeight - 1, fromY);
+  } else {
+    const fromRight = fromX < toX;
+    const fromBelow = fromY < toY;
+    const startX = fromRight ? fromX + fromWidth - 1 : fromX;
+    const endX = fromRight ? toX : toX + toWidth - 1;
+    const startY = fromBelow ? fromY + fromHeight - 1 : fromY;
+    const endY = fromBelow ? toY : toY + toHeight - 1;
+    carveHorizontal(Math.min(startX, endX), Math.max(startX, endX), startY);
+    carveVertical(endX, Math.min(startY, endY), Math.max(startY, endY));
   }
-  waypoints.push(end);
+}
 
-  for (let index = 0; index < waypoints.length - 1; index += 1) {
-    const from = waypoints[index];
-    const to = waypoints[index + 1];
-    if (mazeRandom() < 0.5) {
-      carveHorizontal(Math.min(from.x, to.x), Math.max(from.x, to.x), from.y);
-      carveVertical(to.x, Math.min(from.y, to.y), Math.max(from.y, to.y));
-    } else {
-      carveVertical(from.x, Math.min(from.y, to.y), Math.max(from.y, to.y));
-      carveHorizontal(Math.min(from.x, to.x), Math.max(from.x, to.x), to.y);
+const roomRows = [
+  [0, 2, 3, 4, 5],
+  [6, 7, 8, 9, 10, 11],
+  [12, 13, 14, 15, 16, 17],
+  [18, 19, 20, 21, 22, 23],
+  [24, 25, 26, 27, 1],
+];
+const roomSizes = Array.from({ length: ROOM_COUNT }, (_, index) => {
+  if (index === 0) return [10, 10];
+  if (index === 1) return [12, 12];
+  const largeRoom = index % 5 === 0;
+  const specialRoom = [GAP_ROOM_INDEX, TALL_CEILING_ROOM_INDEX, 20, 25].includes(index);
+  const width = specialRoom ? 14 + Math.floor(mazeRandom() * 2)
+    : largeRoom ? 12 + Math.floor(mazeRandom() * 3)
+      : 6 + Math.floor(mazeRandom() * 3);
+  const height = specialRoom ? 14 + Math.floor(mazeRandom() * 2)
+    : largeRoom ? 12 + Math.floor(mazeRandom() * 3)
+      : 6 + Math.floor(mazeRandom() * 3);
+  return [width, height];
+});
+const rowHeights = roomRows.map((row) =>
+  Math.max(...row.map((index) => roomSizes[index][1]))
+);
+const rowGaps = roomRows.map((_, index) =>
+  index === roomRows.length - 1 ? 0 : 1 + Math.floor(mazeRandom() * 2)
+);
+const totalHeight = rowHeights.reduce((total, height, index) => total + height + rowGaps[index], 0);
+if (totalHeight > ROWS - 6) throw new Error("Could not fit the compact room layout vertically.");
+let rowY = Math.floor((ROWS - totalHeight) / 2);
+
+roomRows.forEach((row, rowIndex) => {
+  const gaps = row.map((_, index) =>
+    index === row.length - 1 ? 0 : 1 + Math.floor(mazeRandom() * 2)
+  );
+  const totalWidth = row.reduce((total, index, position) =>
+    total + roomSizes[index][0] + gaps[position], 0
+  );
+  if (totalWidth > COLS - 6) throw new Error(`Could not fit compact room row ${rowIndex + 1}.`);
+  let column = Math.floor((COLS - totalWidth) / 2);
+  const rowHeight = rowHeights[rowIndex];
+
+  row.forEach((index, position) => {
+    const [width, height] = roomSizes[index];
+    const verticalSlack = rowHeight - height;
+    const centeredOffset = Math.floor(verticalSlack / 2);
+    const jitter = verticalSlack > 2 ? Math.floor(mazeRandom() * 3) - 1 : 0;
+    const y = rowY + Math.max(0, Math.min(verticalSlack, centeredOffset + jitter));
+    if (!addRoom(index, column, y, width, height)) {
+      throw new Error(`Room ${index + 1} overlaps another room in the compact layout.`);
     }
-  }
-}
-
-addRoom(4, 4, 10, 10);
-addRoom(88, 88, 12, 12);
-for (let index = 2; index < ROOM_COUNT; index += 1) {
-  let placed = false;
-  for (let attempt = 0; attempt < 2000 && !placed; attempt += 1) {
-    const largeRoom = index % 5 === 0;
-    const specialRoom = [GAP_ROOM_INDEX, TALL_CEILING_ROOM_INDEX, 20, 25].includes(index);
-    const width = specialRoom ? 14 + Math.floor(mazeRandom() * 2)
-      : largeRoom ? 12 + Math.floor(mazeRandom() * 3)
-        : 6 + Math.floor(mazeRandom() * 3);
-    const height = specialRoom ? 14 + Math.floor(mazeRandom() * 2)
-      : largeRoom ? 12 + Math.floor(mazeRandom() * 3)
-        : 6 + Math.floor(mazeRandom() * 3);
-    const x = 3 + Math.floor(mazeRandom() * (MAP_SIZE - width - 6));
-    const y = 3 + Math.floor(mazeRandom() * (MAP_SIZE - height - 6));
-    placed = addRoom(x, y, width, height);
-  }
-  if (!placed) throw new Error(`Could not place maze room ${index + 1}.`);
-}
+    column += width + gaps[position];
+  });
+  rowY += rowHeight + rowGaps[rowIndex];
+});
 
 function buildMaze() {
   rooms.forEach(([x, y, width, height]) => carveRect(x, y, width, height));
@@ -177,9 +213,7 @@ function buildMaze() {
     if (neighbor) connections.push([GAP_ROOM_INDEX, neighbor.index]);
   }
 
-  for (const [from, to] of connections) {
-    carveWindingConnection(roomCenters[from], roomCenters[to]);
-  }
+  for (const [from, to] of connections) carveRoomConnection(from, to);
 
   rooms.forEach(([x, y, width, height], index) => {
     if (width < 12 || height < 12 || (index !== 0 && index !== 1 && index % 5 !== 0)) return;
@@ -192,22 +226,6 @@ function buildMaze() {
     for (const [column, row] of corners) {
       const key = `${column},${row}`;
       pillarCells.add(key);
-      map[row][column] = "#";
-    }
-  });
-
-  rooms.forEach(([x, y, width, height], index) => {
-    if ([0, 1, 10, 4, 13, 22].includes(index)) return;
-    const candidates = [
-      [x + 2, y + 2],
-      [x + width - 3, y + 2],
-      [x + 2, y + height - 3],
-      [x + width - 3, y + height - 3],
-    ];
-    for (const [column, row] of candidates) {
-      const key = `${column},${row}`;
-      if (map[row][column] !== "." || pillarCells.has(key)) continue;
-      obstacleCells.add(key);
       map[row][column] = "#";
     }
   });
@@ -373,8 +391,8 @@ scene.add(worldRoot);
 const endingRoot = new THREE.Group();
 endingRoot.visible = false;
 scene.add(endingRoot);
-scene.background = new THREE.Color(0x171306);
-scene.fog = new THREE.Fog(0x171306, 180, 820);
+scene.background = new THREE.Color(0x746b43);
+scene.fog = new THREE.Fog(0x746b43, 180, 820);
 
 const camera = new THREE.PerspectiveCamera(76, 8 / 5, 0.1, 1500);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -385,7 +403,7 @@ renderer.toneMappingExposure = 1.25;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-worldRoot.add(new THREE.HemisphereLight(0xffe6a3, 0x171108, 1.21));
+worldRoot.add(new THREE.HemisphereLight(0xffe6a3, 0x554728, 1.3));
 const moonlight = new THREE.DirectionalLight(0xffe2a0, 0.715);
 moonlight.position.set(-180, 250, -90);
 moonlight.castShadow = true;
@@ -880,7 +898,6 @@ function buildWorld() {
   const walls = [];
   const pillars = [];
   const tallPillars = [];
-  const obstacles = [];
   const inTallRoom = (column, row) =>
     column >= tallRoomX &&
     column < tallRoomX + tallRoomWidth &&
@@ -894,8 +911,7 @@ function buildWorld() {
           floors.push(cell);
           (inTallRoom(column, row) ? tallCeilingTiles : normalCeilingTiles).push(cell);
         }
-      } else if (obstacleCells.has(`${column},${row}`)) obstacles.push(cell);
-      else if (pillarCells.has(`${column},${row}`)) {
+      } else if (pillarCells.has(`${column},${row}`)) {
         (inTallRoom(column, row) ? tallPillars : pillars).push(cell);
       }
       else walls.push(cell);
@@ -918,17 +934,10 @@ function buildWorld() {
   }
 
   addInstancedTiles(
-    obstacles,
-    new THREE.BoxGeometry(31, 44, 31),
-    materials.darkWood,
-    ({ x, y }) => new THREE.Color().setHSL(0.09 + ((x * 7 + y * 13) % 4) * 0.012, 0.28, 0.22),
-    21,
-  );
-  addInstancedTiles(
     floors,
     new THREE.BoxGeometry(TILE + 0.5, 2, TILE + 0.5),
     materials.floor,
-    ({ x, y }) => new THREE.Color().setHSL(0.115 + ((x * 17 + y * 29) % 5) * 0.004, 0.18, 0.19),
+    ({ x, y }) => new THREE.Color().setHSL(0.13 + ((x * 17 + y * 29) % 5) * 0.003, 0.3, 0.66),
     -1,
   );
   const pitVoid = new THREE.Mesh(
@@ -1004,7 +1013,7 @@ function buildWorld() {
     walls,
     new THREE.BoxGeometry(TILE, WALL_HEIGHT, TILE),
     materials.wall,
-    ({ x, y }) => new THREE.Color().setHSL(0.115 + ((x * 11 + y * 19) % 5) * 0.004, 0.2, 0.21),
+    ({ x, y }) => new THREE.Color().setHSL(0.13 + ((x * 11 + y * 19) % 5) * 0.003, 0.3, 0.48),
     WALL_HEIGHT / 2,
   );
   addInstancedTiles(
@@ -1032,14 +1041,14 @@ function buildWorld() {
     normalCeilingTiles,
     new THREE.BoxGeometry(TILE + 0.2, 2, TILE + 0.2),
     materials.ceiling,
-    () => new THREE.Color(0xc9be9f),
+    () => new THREE.Color(0xd8ca9e),
     70,
   );
   addInstancedTiles(
     tallCeilingTiles,
     new THREE.BoxGeometry(TILE + 0.2, 2, TILE + 0.2),
     materials.ceiling,
-    () => new THREE.Color(0xc9be9f),
+    () => new THREE.Color(0xd8ca9e),
     TALL_CEILING_HEIGHT + 1,
   );
 
@@ -1156,21 +1165,8 @@ function buildWorld() {
     -Math.PI / 2,
   );
 
-  const rugMaterial = materials.rug;
   rooms.forEach(([x, y, width, height], index) => {
     const room = [x, y, width, height];
-    const center = tileWorldPosition(x + Math.floor(width / 2), y + Math.floor(height / 2));
-    if (index % 3 !== 2 && index !== pitRoomIndex) {
-      const rug = new THREE.Mesh(
-        new THREE.BoxGeometry(Math.min(100, width * TILE * 0.52), 0.5, Math.min(75, height * TILE * 0.42)),
-        rugMaterial,
-      );
-      rug.position.set(center.x, 0.15, center.z);
-      rug.rotation.y = (mazeRandom() - 0.5) * 0.4;
-      rug.receiveShadow = true;
-      worldRoot.add(rug);
-    }
-
     const roomSide = [0, 1, 2, 3, 2, 1, 3][index % 7];
     const orientationOffset = [0, 0, 0, 0, 0.28, -0.28, 0.14][index % 7];
     const shelf = new THREE.Group();
@@ -2029,8 +2025,7 @@ function collidesWithWall(x, y, radius) {
       if (!isWall(column, row)) continue;
       const key = `${column},${row}`;
       const pillar = pillarCells.has(key);
-      const obstacle = obstacleCells.has(key);
-      const halfSize = pillar ? TILE / 4 : obstacle ? 16 : TILE / 2;
+      const halfSize = pillar ? TILE / 4 : TILE / 2;
       const centerX = column * TILE + TILE / 2;
       const centerY = row * TILE + TILE / 2;
       const nearestX = Math.max(centerX - halfSize, Math.min(x, centerX + halfSize));
@@ -2343,8 +2338,8 @@ function resetGame() {
   endingThankYou.classList.remove("visible");
   endingThankYou.setAttribute("aria-hidden", "true");
   document.body.classList.remove("ending-sequence");
-  scene.background = new THREE.Color(0x171306);
-  scene.fog = new THREE.Fog(0x171306, 180, 820);
+  scene.background = new THREE.Color(0x746b43);
+  scene.fog = new THREE.Fog(0x746b43, 180, 820);
   camera.fov = 76;
   camera.updateProjectionMatrix();
   player.x = playerStart.x;

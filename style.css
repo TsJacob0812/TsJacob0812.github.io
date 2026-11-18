@@ -1473,6 +1473,44 @@ nav h1 {
   transform: translateX(8px);
 }
 
+.portfolio-page #custom-games .backrooms-link {
+  color: #ffe36a;
+  background:
+    linear-gradient(rgba(20, 15, 2, 0.14), rgba(20, 15, 2, 0.3)),
+    url("assets/backrooms-wallpaper.png") center 48% / cover;
+  border-color: #b6a24f;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+}
+
+.portfolio-page #custom-games .backrooms-link:hover {
+  color: #fff08a;
+  background:
+    linear-gradient(rgba(20, 15, 2, 0.06), rgba(20, 15, 2, 0.2)),
+    url("assets/backrooms-wallpaper.png") center 48% / cover;
+  border-color: #ffe36a;
+  transform: none;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(255, 227, 106, 0.25);
+}
+
+.portfolio-page #custom-games .fortnite-link,
+.portfolio-page #custom-games .fortnite-link:hover {
+  color: #fff;
+  background:
+    linear-gradient(rgba(2, 8, 24, 0.16), rgba(2, 8, 24, 0.34)),
+    url("assets/fortnite-wallpaper.png") center / cover;
+  border-color: #5da6e8;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95);
+}
+
+.portfolio-page #custom-games .fortnite-link:hover {
+  transform: none;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(93, 166, 232, 0.3);
+}
+
 @keyframes portfolio-drift {
   from {
     background-position:
