@@ -6800,6 +6800,20 @@ body.portfolio-page #custom-games a {
   overflow: hidden;
 }
 
+body.portfolio-page #custom-games .neon-coast-link {
+  color: #ffe6d8;
+  background:
+    linear-gradient(rgba(7, 14, 25, 0.3), rgba(7, 14, 25, 0.56)),
+    linear-gradient(120deg, #173b53, #171626 58%, #591d37);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95);
+}
+
+body.portfolio-page #custom-games .neon-coast-link:hover {
+  color: #fff;
+  background: linear-gradient(120deg, #245c72, #221d37 58%, #852545);
+  box-shadow: 0 12px 28px rgba(24, 126, 158, 0.22);
+}
+
 body.portfolio-page #custom-games a::before {
   content: "";
   position: absolute;
